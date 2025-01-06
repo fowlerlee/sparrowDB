@@ -1,3 +1,7 @@
+pub mod storage;
+pub mod buffer;
+
+
 pub fn write_to_page() -> bool {
     
 	return true;
