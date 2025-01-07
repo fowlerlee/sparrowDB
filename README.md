@@ -4,7 +4,7 @@
 
 ## What's sparrowDB
 
-This is a sql relational databased implemented in rust. 
+This is a sql relational database implemented in rust. 
 
 ## Contribution
 
