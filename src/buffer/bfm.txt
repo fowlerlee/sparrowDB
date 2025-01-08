@@ -1,0 +1,62 @@
+
+
+
+
+
+
+class BufferPoolManager {
+ public:
+  BufferPoolManager(size_t num_frames, DiskManager *disk_manager, size_t k_dist = LRUK_REPLACER_K,
+                    LogManager *log_manager = nullptr);
+  ~BufferPoolManager();
+
+  auto Size() const -> size_t;
+  auto NewPage() -> page_id_t;
+  auto DeletePage(page_id_t page_id) -> bool;
+  auto CheckedWritePage(page_id_t page_id, AccessType access_type = AccessType::Unknown)
+      -> std::optional<WritePageGuard>;
+  auto CheckedReadPage(page_id_t page_id, AccessType access_type = AccessType::Unknown) -> std::optional<ReadPageGuard>;
+  auto WritePage(page_id_t page_id, AccessType access_type = AccessType::Unknown) -> WritePageGuard;
+  auto ReadPage(page_id_t page_id, AccessType access_type = AccessType::Unknown) -> ReadPageGuard;
+  auto FlushPage(page_id_t page_id) -> bool;
+  void FlushAllPages();
+  auto GetPinCount(page_id_t page_id) -> std::optional<size_t>;
+
+ private:
+  /** @brief The number of frames in the buffer pool. */
+  const size_t num_frames_;
+
+  /** @brief The next page ID to be allocated.  */
+  std::atomic<page_id_t> next_page_id_;
+    r = std
+    l = && r 
+    r = nullopt
+    l = std
+  /**
+   * @brief The latch protecting the buffer pool's inner data structures.
+   *
+   * TODO(P1) We recommend replacing this comment with details about what this latch actually protects.
+   */
+  std::shared_ptr<std::mutex> bpm_latch_;
+
+  /** @brief The frame headers of the frames that this buffer pool manages. */
+  std::vector<std::shared_ptr<FrameHeader>> frames_;
+
+  /** @brief The page table that keeps track of the mapping between pages and buffer pool frames. */
+  std::unordered_map<page_id_t, frame_id_t> page_table_;
+
+  /** @brief A list of free frames that do not hold any page's data. */
+  std::list<frame_id_t> free_frames_;
+
+  /** @brief The replacer to find unpinned / candidate pages for eviction. */
+  std::shared_ptr<LRUKReplacer> replacer_;
+
+  /** @brief A pointer to the disk scheduler. */
+  std::unique_ptr<DiskScheduler> disk_scheduler_;
+
+  /**
+   * @brief A pointer to the log manager.
+   *
+   * Note: Please ignore this for P1.
+   */
+  LogManager *log_manager_ __attribute__((__unused__));
