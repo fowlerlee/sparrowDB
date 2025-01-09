@@ -44,10 +44,38 @@ impl LRUKReplacer {
         Self::default()
     }
 
+    //     ? std::numeric_limits<size_t>::max()
+    // : std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch())
+    //           .count() -
+    //       node.history_.front();
+
+    // frame_id to evict func of k_dist = Max
+
+    //  |1.K, 2.K...__________| node_state
+    // Now | _t1M,_t3,_t4,_t2 LRUNODE1 | _t2,_t3,_t1,_t4 lRUNODE 2
     fn Evict(&mut self) -> Option<FrameId> {
-        for (k, v) in self.node_store.iter() {
+        let mut victim_id: FrameId = 0usize;
+        for (_k_, v) in self.node_store.iter_mut() {
             if v.is_evictable {
                 // v.history[2] = std::time::SystemTime::now();
+                let now = std::time::Instant::now().elapsed().as_nanos();
+
+                v.k_ = now as usize - v.history[v.history.len() - 2] as usize;
+            }
+        }
+
+        for (k, node) in self.node_store.iter() {
+            if node.is_evictable && self.node_store[&k].k_ > self.node_store[&(k + 1)].k_ {
+                victim_id = self.node_store.get(k).unwrap().fid;
+            } else if node.is_evictable {
+                victim_id = self.node_store.get(&(k+1)).unwrap().fid;
+            }
+            
+        }
+
+        for (k , node ) in self.node_store.iter_mut() {
+            if  node.fid == victim_id {
+            //    let frame = self.node_store.clone();
             }
         }
 
@@ -60,7 +88,7 @@ impl LRUKReplacer {
     fn Remove(&mut self) {}
 
     fn SetEvictable(&mut self, frame_id_t: FrameId, set_evictable: bool) {
-        if let Some(x) = self.node_store.get_mut(&frame_id_t){
+        if let Some(x) = self.node_store.get_mut(&frame_id_t) {
             x.is_evictable = set_evictable;
         }
     }
@@ -70,6 +98,7 @@ impl LRUKReplacer {
     }
 }
 
+// todo: move to storage
 #[derive(Default)]
 struct Page {
     id: usize,
