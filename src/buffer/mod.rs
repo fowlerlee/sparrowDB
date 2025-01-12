@@ -1,5 +1,4 @@
-
-
 mod bufferpoolmanager;
-mod lib;
 mod test;
+
+pub mod lib;

@@ -2,6 +2,8 @@ use std::collections::HashMap;
 use std::sync::atomic::AtomicUsize;
 use std::sync::{Arc, Mutex};
 
+use crate::storage::page::Page;
+
 type PageId = usize;
 type FrameId = usize;
 
@@ -98,11 +100,7 @@ impl LRUKReplacer {
     }
 }
 
-// todo: move to storage
-#[derive(Default)]
-struct Page {
-    id: usize,
-}
+
 
 pub struct BufferPoolManager {
     num_frames: usize,

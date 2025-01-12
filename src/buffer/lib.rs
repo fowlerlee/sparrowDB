@@ -1,8 +1,5 @@
 use crate::buffer::bufferpoolmanager::BufferPoolManager;
 
-pub fn createBufferPoolManager() -> BufferPoolManager {
-    let bufferPoolManager = BufferPoolManager::new(5);
-    return bufferPoolManager;
+pub fn create_buffer_pool_manager() -> BufferPoolManager {
+    return BufferPoolManager::new(5);
 }
-
-
