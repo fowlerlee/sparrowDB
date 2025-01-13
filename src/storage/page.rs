@@ -25,6 +25,8 @@ impl Page {
         self.id = 0usize;
         let mut mutex_guard = self.lock_data();
         mutex_guard.clear();
+        self.is_dirty.store(false, Ordering::SeqCst);
+        self.pin_count.store(0, Ordering::SeqCst);
     }
 
     pub fn mark_dirty(&self) {
