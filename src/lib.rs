@@ -4,10 +4,15 @@ pub mod storage;
 use crate::buffer::lib::*;
 
 #[cfg(test)]
-fn test_buffering_memory() {
-    let bpm = create_buffer_pool_manager();
-    bpm.getBufferPoolSize();
-
+mod test{
+    use super::*;
     
+    fn test_buffering_memory() {
+        let bpm = create_buffer_pool_manager();
+        bpm.getBufferPoolSize();
+    
+    }
+
+
 
 }

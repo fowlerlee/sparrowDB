@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::sync::atomic::AtomicUsize;
 use std::sync::{Arc, Mutex};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::storage::page::Page;
 
@@ -46,46 +47,38 @@ impl LRUKReplacer {
         Self::default()
     }
 
-    //     ? std::numeric_limits<size_t>::max()
-    // : std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch())
-    //           .count() -
-    //       node.history_.front();
-
-    // frame_id to evict func of k_dist = Max
-
-    //  |1.K, 2.K...__________| node_state
-    // Now | _t1M,_t3,_t4,_t2 LRUNODE1 | _t2,_t3,_t1,_t4 lRUNODE 2
     fn Evict(&mut self) -> Option<FrameId> {
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("Time went backwards")
+            .as_nanos() as usize;
+
+        let evictable = self
+            .node_store
+            .iter_mut()
+            .filter(|(_, node)| node.is_evictable);
+
         let mut victim_id: FrameId = 0usize;
-        for (_k_, v) in self.node_store.iter_mut() {
-            if v.is_evictable {
-                // v.history[2] = std::time::SystemTime::now();
-                let now = std::time::Instant::now().elapsed().as_nanos();
-
-                v.k_ = now as usize - v.history[v.history.len() - 2] as usize;
-            }
+        for _i in 0 .. evictable.count() {
+            // let stale_time =
+            //     node.history[node.history.len() - 1] - node.history[0] / node.history.len();
         }
-
-        for (k, node) in self.node_store.iter() {
-            if node.is_evictable && self.node_store[&k].k_ > self.node_store[&(k + 1)].k_ {
-                victim_id = self.node_store.get(k).unwrap().fid;
-            } else if node.is_evictable {
-                victim_id = self.node_store.get(&(k+1)).unwrap().fid;
-            }
-            
-        }
-
-        for (k , node ) in self.node_store.iter_mut() {
-            if  node.fid == victim_id {
-            //    let frame = self.node_store.clone();
-            }
-        }
-
-
         return None;
     }
 
-    fn RecordAccess(&self) {}
+    fn RecordAccess(&mut self, frame_id_t: FrameId) {
+        if let Some((_, node)) = self
+            .node_store
+            .iter_mut()
+            .find(|(_, node)| node.fid == frame_id_t)
+        {
+            let now = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .expect("Time went backwards")
+                .as_nanos();
+            node.history.push(now as usize);
+        }
+    }
 
     fn Remove(&mut self) {}
 
@@ -96,11 +89,9 @@ impl LRUKReplacer {
     }
 
     fn Size(&self) -> usize {
-        return 1 as usize;
+        self.node_store.len()
     }
 }
-
-
 
 pub struct BufferPoolManager {
     num_frames: usize,
