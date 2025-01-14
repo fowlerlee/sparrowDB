@@ -77,16 +77,27 @@ impl LRUKReplacer {
             .expect("Time went backwards")
             .as_nanos() as usize;
 
-        let evictable = self
+        let mut evictable: Vec<(_, LRUNode)> = self
             .node_store
             .iter_mut()
-            .filter(|(_, node)| node.is_evictable);
+            .filter(|(_, node)| node.is_evictable)
+            .map(|(&key, node)| (key, std::mem::take(node)))
+            .collect();
 
-        let mut victim_id: FrameId = 0usize;
-        for _i in 0..evictable.count() {
-            // let stale_time =
-            //     node.history[node.history.len() - 1] - node.history[0] / node.history.len();
+        let mut victim_id: &FrameId = &0usize;
+        for i in 0..evictable.len() {
+            evictable[i].1.k_ = now - evictable[i].1.history[2];
+            evictable[i + 1].1.k_ = now - evictable[i + 1].1.history[2];
+            if evictable[i].1.k_ > evictable[i + 1].1.k_ {
+                victim_id = &evictable[i].1.fid
+            } else {
+                victim_id = &evictable[i + 1].1.fid
+            }
         }
+        if let Some(evictee) = self.node_store.remove(&victim_id) {
+            return Some(evictee.fid);
+        }
+
         return None;
     }
 
