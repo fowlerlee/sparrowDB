@@ -32,6 +32,23 @@ struct LRUNode {
 //   [[maybe_unused]] size_t k_;
 //   [[maybe_unused]] std::mutex latch_;
 
+// Notes on algorithm:
+// syntax: k_b_d == K-backward-distance where K = 2 in this algorithm
+// 1. [A][B][C][D][E] -> Nodes/Pages
+// 2. Access C then A -> [B][D][E][C][A] then eventually get order [A][C][E][B][D]
+// 3. Evict LRU-K where K = 2 -> Eviction ==
+// \A n \in Nodes: IF Node[n].k_b_d = MAXIMUM({Node[n].k_b_d})
+//                 THEN Flush(Node[n]) to Disk/Stable storage
+// 4. \A n \in Node[n].k_b_d == Time_now - Node[n].HISTORY[K] where K = 2 [this is 3rd element in vector]
+// 5. \A n \in Nodes: IF Nodes[n].HISTORY.len() < 2 THEN Nodes[n].k_b_d = INFINITY
+// 6. \A n, m \in Nodes: IF Nodes[n].k_b_d == Nodes[m].k_b_d == INIFINITY
+//  THEN CHOOSE (n \in Nodes): MINIMUM(Nodes[n].HISTORY[0]) => EVICT (Nodes[n]) ... Flush to disk
+// 7. BufPoolManager.size() == LRUKReplacer.size() == n \in Nodes: Nodes[n] = Evictable: Cardinality(Nodes[n])
+// 8. INIT: LRUReplacer.size() == 0
+// 9. IF {EvictableNodes} > 0 THEN LRUKReplacer.size() = Cardinality({EvictableNodes})
+// 10. \A n \in Nodes: IF Nodes[n] == Pinnned OR Nodes[n] == Not_Used where Not_User = f(Nodes[n].HISTORY)
+// THEN LRUKReplacer.len() = LRUKReplacer.len() - Nodes[n]_pinned/not_used
+
 #[derive(Clone, Debug, Default)]
 struct LRUKReplacer {
     node_store: HashMap<FrameId, LRUNode>,
@@ -59,7 +76,7 @@ impl LRUKReplacer {
             .filter(|(_, node)| node.is_evictable);
 
         let mut victim_id: FrameId = 0usize;
-        for _i in 0 .. evictable.count() {
+        for _i in 0..evictable.count() {
             // let stale_time =
             //     node.history[node.history.len() - 1] - node.history[0] / node.history.len();
         }
