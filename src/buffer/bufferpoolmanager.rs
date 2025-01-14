@@ -33,6 +33,12 @@ struct LRUNode {
 //   [[maybe_unused]] std::mutex latch_;
 
 // Notes on algorithm:
+//
+// Schematic:
+//     |------------->|A_k
+//     |------>|B_k
+// now |----------------------> time (_k=2) We Evict A with MAX k_b_d
+//
 // syntax: k_b_d == K-backward-distance where K = 2 in this algorithm
 // 1. [A][B][C][D][E] -> Nodes/Pages
 // 2. Access C then A -> [B][D][E][C][A] then eventually get order [A][C][E][B][D]
@@ -65,6 +71,7 @@ impl LRUKReplacer {
     }
 
     fn Evict(&mut self) -> Option<FrameId> {
+        // find Node[n].frame_id = \A n \in Nodes: Node[n].k_b_d = MAXIMUM({Node[n].k_b_d})
         let now = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .expect("Time went backwards")
