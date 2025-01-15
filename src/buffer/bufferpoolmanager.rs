@@ -81,6 +81,7 @@ impl LRUKReplacer {
             .node_store
             .iter_mut()
             .filter(|(_, node)| node.is_evictable)
+            // FIXME: incorrect taking ownership of node and sets to Default of Node, wrong idea
             .map(|(&key, node)| (key, std::mem::take(node)))
             .collect();
 
