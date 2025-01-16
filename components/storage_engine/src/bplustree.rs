@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 
 struct Node <T> {
     keys: Vec<T>,
@@ -8,4 +10,6 @@ struct Node <T> {
     prev: Option<Box<Node<T>>>,
 }
 
-struct BPlusTree {}
+struct BPlusTree<T> {
+    nodes: HashMap<u128, Node<T>>
+}

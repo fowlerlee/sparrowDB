@@ -3,7 +3,7 @@ use std::sync::atomic::AtomicUsize;
 use std::sync::{Arc, Mutex};
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use crate::storage::page::Page;
+use storage_engine::page::Page;
 
 type PageId = usize;
 type FrameId = usize;
@@ -40,8 +40,8 @@ struct LRUNode {
 // now |----------------------> time (_k=2) We Evict A with MAX k_b_d
 //
 // syntax: k_b_d == K-backward-distance where K = 2 in this algorithm
-// 1. [A][B][C][D][E] -> Nodes/Pages
-// 2. Access C then A -> [B][D][E][C][A] then eventually get order [A][C][E][B][D]
+// 1. [MRU][A][B][C][D][E][LRU] -> Nodes/Pages
+// 2. Access C then A -> [MRU][B][D][E][C][A][LRU] then eventually get order [A][C][E][B][D]
 // 3. Evict LRU-K where K = 2 -> Eviction ==
 // \A n \in Nodes: IF Node[n].k_b_d = MAXIMUM({Node[n].k_b_d})
 //                 THEN Flush(Node[n]) to Disk/Stable storage
@@ -86,15 +86,18 @@ impl LRUKReplacer {
             .collect();
 
         let mut victim_id: &FrameId = &0usize;
-        for i in 0..evictable.len() {
-            evictable[i].1.k_ = now - evictable[i].1.history[2];
-            evictable[i + 1].1.k_ = now - evictable[i + 1].1.history[2];
-            if evictable[i].1.k_ > evictable[i + 1].1.k_ {
-                victim_id = &evictable[i].1.fid
-            } else {
-                victim_id = &evictable[i + 1].1.fid
+        {
+            for i in 0..evictable.len() {
+                evictable[i].1.k_ = now - evictable[i].1.history[2];
+                evictable[i + 1].1.k_ = now - evictable[i + 1].1.history[2];
+                if evictable[i].1.k_ > evictable[i + 1].1.k_ {
+                    victim_id = &evictable[i].1.fid
+                } else {
+                    victim_id = &evictable[i + 1].1.fid
+                }
             }
         }
+
         if let Some(evictee) = self.node_store.remove(&victim_id) {
             return Some(evictee.fid);
         }
@@ -154,6 +157,14 @@ impl BufferPoolManager {
             free_frames: Vec::new(),
             replacer: Box::new(LRUKReplacer::default()),
         }
+    }
+
+    pub fn NewPage(&mut self) -> FrameId {
+        self.num_frames += 1;
+        // FIXME: change struct for Value in page_table
+        self.page_table.insert(self.num_frames, self.num_frames);
+
+        self.num_frames
     }
 
     pub fn getBufferPoolSize(&self) -> usize {

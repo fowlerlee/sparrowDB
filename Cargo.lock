@@ -3,5 +3,35 @@
 version = 3
 
 [[package]]
+name = "buffer"
+version = "0.1.0"
+dependencies = [
+ "storage_engine",
+]
+
+[[package]]
+name = "concurrency_manager"
+version = "0.1.0"
+
+[[package]]
+name = "file_system"
+version = "0.1.0"
+
+[[package]]
+name = "query_executors"
+version = "0.1.0"
+
+[[package]]
 name = "sparrowdb"
+version = "0.1.0"
+dependencies = [
+ "buffer",
+ "concurrency_manager",
+ "file_system",
+ "query_executors",
+ "storage_engine",
+]
+
+[[package]]
+name = "storage_engine"
 version = "0.1.0"

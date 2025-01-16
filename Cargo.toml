@@ -6,4 +6,18 @@ edition = "2021"
 [lib]
 name = "sparrowdb"
 
+
+[workspace]
+members = [
+    "components/concurrency_manager", 
+    "components/file_system", 
+    "components/query_executors", 
+    "components/storage_engine",
+    "components/buffer"]
+
 [dependencies]
+file_system = { path = "components/file_system" }
+concurrency_manager = { path = "components/concurrency_manager" }
+storage_engine = { path = "components/storage_engine" }
+query_executors = { path = "components/query_executors" }
+buffer = { path = "components/buffer"}
