@@ -10,6 +10,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "common"
+version = "0.1.0"
+
+[[package]]
 name = "concurrency_manager"
 version = "0.1.0"
 
@@ -34,4 +38,8 @@ dependencies = [
 
 [[package]]
 name = "storage_engine"
+version = "0.1.0"
+
+[[package]]
+name = "utils"
 version = "0.1.0"

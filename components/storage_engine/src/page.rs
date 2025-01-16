@@ -3,7 +3,7 @@ use std::sync::{Arc, Mutex, MutexGuard};
 
 // Note: we use u8 not char, so its mem efficient but we have
 // to do String::from_utf8(data.clone()).expect("Invalid UTF-8 data")
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct Page {
     id: usize,
     pub data: Mutex<Vec<u8>>,
