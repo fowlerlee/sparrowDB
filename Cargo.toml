@@ -23,3 +23,4 @@ concurrency_manager = { path = "components/concurrency_manager" }
 storage_engine = { path = "components/storage_engine" }
 query_executors = { path = "components/query_executors" }
 buffer = { path = "components/buffer"}
+

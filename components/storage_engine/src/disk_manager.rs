@@ -1,4 +1,5 @@
 use crate::page::PageId;
+use common::types::TxnResult;
 use file_system::file::File;
 use std::io::{Read, Result, Write};
 
@@ -26,10 +27,9 @@ impl DiskManager {
     }
 
     // FIXME: must write at pageid
-    pub fn write_page(&mut self, _pageid: PageId, page_data: &mut [u8]) -> Result<()> {
+    pub fn write_page(&mut self, _pageid: PageId, page_data: &mut [u8]) -> TxnResult<usize, ()> {
         let mut buffer = [0; 64];
-        let n: usize = self.file.write(&mut buffer[..])?;
-        page_data[..n].copy_from_slice(&buffer[..n]);
-        Ok(())
+        page_data[..].copy_from_slice(&buffer[..]);
+        TxnResult::Ok(self.file.write(&mut buffer[..]).unwrap())
     }
 }

@@ -54,4 +54,8 @@ impl<'a> DiskScheduler<'a> {
             // channel_clone.1.wait(guard)
         });
     }
+    #[allow(dead_code)]
+    pub fn schedule(_request: DiskRequest) {
+        
+    }
 }

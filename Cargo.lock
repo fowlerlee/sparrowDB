@@ -40,6 +40,7 @@ dependencies = [
 name = "storage_engine"
 version = "0.1.0"
 dependencies = [
+ "common",
  "file_system",
 ]
 
