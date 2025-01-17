@@ -1,4 +1,4 @@
-mod file;
+pub mod file;
 mod io_rate_limiter;
 
 mod settings {

@@ -8,7 +8,6 @@ pub fn create_buffer_pool_manager() -> BufferPoolManager {
 
 mod tests {
 
-    use super::*;
 
     #[test]
     fn test_buffer_pool_manager_size() {

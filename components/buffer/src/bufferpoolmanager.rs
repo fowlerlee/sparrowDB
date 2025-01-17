@@ -55,6 +55,7 @@ struct LRUNode {
 // 10. \A n \in Nodes: IF Nodes[n] == Pinnned OR Nodes[n] == Not_Used where Not_User = f(Nodes[n].HISTORY)
 // THEN LRUKReplacer.len() = LRUKReplacer.len() - Nodes[n]_pinned/not_used
 
+#[allow(dead_code)]
 #[derive(Clone, Debug, Default)]
 struct LRUKReplacer {
     node_store: HashMap<FrameId, LRUNode>,
@@ -65,11 +66,13 @@ struct LRUKReplacer {
     latch: Arc<Mutex<LRUNode>>,
 }
 
+#[allow(dead_code)]
 impl LRUKReplacer {
     fn new(&self) -> Self {
         Self::default()
     }
 
+    #[allow(non_snake_case)]
     fn Evict(&mut self) -> Option<FrameId> {
         // find Node[n].frame_id = \A n \in Nodes: Node[n].k_b_d = MAXIMUM({Node[n].k_b_d})
         let now = SystemTime::now()
@@ -105,6 +108,7 @@ impl LRUKReplacer {
         return None;
     }
 
+    #[allow(non_snake_case)]
     fn RecordAccess(&mut self, frame_id_t: FrameId) {
         if let Some((_, node)) = self
             .node_store
@@ -119,19 +123,23 @@ impl LRUKReplacer {
         }
     }
 
+    #[allow(non_snake_case)]
     fn Remove(&mut self) {}
 
+    #[allow(non_snake_case)]
     fn SetEvictable(&mut self, frame_id_t: FrameId, set_evictable: bool) {
         if let Some(x) = self.node_store.get_mut(&frame_id_t) {
             x.is_evictable = set_evictable;
         }
     }
 
+    #[allow(non_snake_case)]
     fn Size(&self) -> usize {
         self.node_store.len()
     }
 }
 
+#[allow(dead_code)]
 pub struct BufferPoolManager {
     num_frames: usize,
     next_page: AtomicUsize,
@@ -159,6 +167,7 @@ impl BufferPoolManager {
         }
     }
 
+    #[allow(non_snake_case)]
     pub fn NewPage(&mut self) -> FrameId {
         self.num_frames += 1;
         // FIXME: change struct for Value in page_table
@@ -166,7 +175,7 @@ impl BufferPoolManager {
 
         self.num_frames
     }
-
+    #[allow(non_snake_case)]
     pub fn getBufferPoolSize(&self) -> usize {
         self.frames.len()
     }

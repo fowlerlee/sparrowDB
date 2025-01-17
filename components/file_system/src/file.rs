@@ -1,10 +1,10 @@
-use crate::io_rate_limiter::{IoRateLimiter, IoOp};
+use super::settings::get_io_type;
+use crate::io_rate_limiter::{IoOp, IoRateLimiter};
 use std::fmt::{self, Debug, Formatter};
 use std::io::{Read, Result, Write};
 use std::sync::Arc;
-use super::settings::get_io_type;
 
-struct File {
+pub struct File {
     inner: std::fs::File,
     limiter: Option<Arc<IoRateLimiter>>,
 }
@@ -29,7 +29,7 @@ impl Read for File {
                     break;
                 }
             }
-            Ok((pos))
+            Ok(pos)
         } else {
             self.inner.read(buf)
         }
