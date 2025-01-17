@@ -1,10 +1,12 @@
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
-use std::sync::{Arc, Mutex, MutexGuard};
+use std::sync::{Mutex, MutexGuard};
 
+pub type PageId = usize;
 // Note: we use u8 not char, so its mem efficient but we have
 // to do String::from_utf8(data.clone()).expect("Invalid UTF-8 data")
 #[derive(Default, Debug)]
 pub struct Page {
+    #[allow(dead_code)]
     id: usize,
     pub data: Mutex<Vec<u8>>,
     pin_count: AtomicUsize,
@@ -20,7 +22,7 @@ impl Page {
             is_dirty: AtomicBool::new(false),
         }
     }
-
+    #[allow(dead_code)]
     fn reset_memory(&mut self) {
         self.id = 0usize;
         let mut mutex_guard = self.lock_data();

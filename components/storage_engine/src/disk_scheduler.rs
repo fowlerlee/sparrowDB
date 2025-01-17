@@ -20,15 +20,17 @@ use crate::disk_manager::DiskManager;
 use crate::page::Page;
 use std::sync::{Arc, Condvar, Mutex};
 use std::{collections::VecDeque, thread};
-
+#[allow(dead_code)]
 struct DiskRequest {}
 
+#[allow(dead_code)]
 struct DiskScheduler<'a> {
-    disk_manager: &'a DiskManager<'a>,
+    disk_manager: &'a DiskManager,
     channel: Arc<(Mutex<VecDeque<Page>>, Condvar)>, // Channel to coordinate threads
 }
 
 impl<'a> DiskScheduler<'a> {
+    #[allow(dead_code)]
     pub fn new(disk_manager: &'a DiskManager) -> Self {
         Self {
             disk_manager,
@@ -37,6 +39,7 @@ impl<'a> DiskScheduler<'a> {
     }
 
     // Start a worker thread
+    #[allow(dead_code)]
     pub fn start_worker_thread(&self) {
         let channel_clone = Arc::clone(&self.channel);
 

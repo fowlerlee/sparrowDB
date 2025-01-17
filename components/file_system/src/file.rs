@@ -1,6 +1,7 @@
 use super::settings::get_io_type;
 use crate::io_rate_limiter::{IoOp, IoRateLimiter};
 use std::fmt::{self, Debug, Formatter};
+#[allow(unused)]
 use std::io::{Read, Result, Write};
 use std::sync::Arc;
 

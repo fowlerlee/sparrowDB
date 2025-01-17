@@ -3,9 +3,8 @@ use std::sync::atomic::AtomicUsize;
 use std::sync::{Arc, Mutex};
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use storage_engine::page::Page;
+use storage_engine::page::{Page, PageId};
 
-type PageId = usize;
 type FrameId = usize;
 
 #[derive(Copy, Clone, Debug, PartialEq)]
