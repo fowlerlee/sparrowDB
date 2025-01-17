@@ -10,14 +10,6 @@ type FrameId = usize;
 #[derive(Copy, Clone, Debug, PartialEq)]
 struct FrameHeader {}
 
-#[derive(Debug, Default, Clone, PartialEq)]
-struct LRUNode {
-    history: Vec<usize>,
-    k_: usize,
-    fid: FrameId,
-    is_evictable: bool,
-}
-
 // Evict() -> std::optional<frame_id_t> : Evict the frame that has the largest backward k-distance compared to all other evictable frames being tracked by the Replacer. If there are no evictable frames, return std::nullopt.
 // RecordAccess(frame_id_t frame_id) : Record that the given frame has been accessed at the current timestamp. This method should be called after a page has been pinned in the BufferPoolManager.
 // Remove(frame_id_t frame_id) : Clear all access history associated with a frame. This method should be called only when a page is deleted in the BufferPoolManager.
@@ -54,6 +46,14 @@ struct LRUNode {
 // 10. \A n \in Nodes: IF Nodes[n] == Pinnned OR Nodes[n] == Not_Used where Not_User = f(Nodes[n].HISTORY)
 // THEN LRUKReplacer.len() = LRUKReplacer.len() - Nodes[n]_pinned/not_used
 
+#[derive(Debug, Default, Clone, PartialEq)]
+struct LRUNode {
+    history: Vec<usize>,
+    k_: usize,
+    fid: FrameId,
+    is_evictable: bool,
+}
+
 #[allow(dead_code)]
 #[derive(Clone, Debug, Default)]
 struct LRUKReplacer {
@@ -67,44 +67,57 @@ struct LRUKReplacer {
 
 #[allow(dead_code)]
 impl LRUKReplacer {
-    fn new(&self) -> Self {
+    fn new() -> Self {
         Self::default()
     }
 
     #[allow(non_snake_case)]
     fn Evict(&mut self) -> Option<FrameId> {
         // find Node[n].frame_id = \A n \in Nodes: Node[n].k_b_d = MAXIMUM({Node[n].k_b_d})
-        let now = SystemTime::now()
+        let _now = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .expect("Time went backwards")
             .as_nanos() as usize;
 
-        let mut evictable: Vec<(_, LRUNode)> = self
+        let mut evictable = self
             .node_store
-            .iter_mut()
-            .filter(|(_, node)| node.is_evictable)
-            // FIXME: incorrect taking ownership of node and sets to Default of Node, wrong idea
-            .map(|(&key, node)| (key, std::mem::take(node)))
-            .collect();
+            .values()
+            .filter(|node| node.is_evictable)
+            .cloned()
+            .collect::<Vec<LRUNode>>();
 
-        let mut victim_id: &FrameId = &0usize;
-        {
-            for i in 0..evictable.len() {
-                evictable[i].1.k_ = now - evictable[i].1.history[2];
-                evictable[i + 1].1.k_ = now - evictable[i + 1].1.history[2];
-                if evictable[i].1.k_ > evictable[i + 1].1.k_ {
-                    victim_id = &evictable[i].1.fid
-                } else {
-                    victim_id = &evictable[i + 1].1.fid
-                }
+        // [A,B,C,D]
+        for i in 0..evictable.len() - 1 {
+            // IF Nodes[n].HISTORY.len() < 2 THEN Nodes[n].k_b_d = INFINITY
+            //  if left.last().unwrap().history.len() < 2 {
+            //             evictable[i].k_ = usize::MAX;
+            //         }
+            //         if right[i + 1].history.len() < 2 {
+            //             evictable[i + 1].k_ = usize::MAX;
+            //         }
+
+            //         if evictable[i].k_ == evictable[i + 1].k_ {
+            //             if evictable[i].history[0] < evictable[i + 1].history[0] {}
+            //         } else {
+            //             evictable[i].k_ = now - evictable[i].history[2];
+            //             evictable[i + 1].k_ = now - evictable[i + 1].history[2];
+            //         }
+            
+            // evictable: [A,B,C,D]
+            let (left, right) = evictable.split_at_mut(i + 1); // (left: [A], [B,C,D])
+            if left.last().unwrap().k_ > right[0].k_ {
+                // if A.k_ > B.k_ {
+                std::mem::swap(&mut left.last().unwrap(), &mut right.first().unwrap());
+                // [B, A, C, D]
             }
         }
+        let victim_id = evictable.last().unwrap().fid;
 
         if let Some(evictee) = self.node_store.remove(&victim_id) {
             return Some(evictee.fid);
+        } else {
+            return None;
         }
-
-        return None;
     }
 
     #[allow(non_snake_case)]
@@ -177,5 +190,15 @@ impl BufferPoolManager {
     #[allow(non_snake_case)]
     pub fn getBufferPoolSize(&self) -> usize {
         self.frames.len()
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_cache() {
+        LRUKReplacer::new();
     }
 }
