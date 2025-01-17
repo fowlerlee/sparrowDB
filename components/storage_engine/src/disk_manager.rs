@@ -1,6 +1,6 @@
 use crate::page::PageId;
 use file_system::file::File;
-use std::io::{Read, Result};
+use std::io::{Read, Result, Write};
 
 #[allow(dead_code)]
 pub struct DiskManager {
@@ -17,10 +17,19 @@ impl DiskManager {
         }
     }
 
+    // FIXME: must read at pageid
     pub fn read_page(&mut self, _pageid: PageId, page_data: &mut [u8]) -> Result<usize> {
         let mut buffer = [0; 64];
         let n = self.file.read(&mut buffer[..])?;
         page_data[..n].copy_from_slice(&buffer[..n]);
         Ok(n)
+    }
+
+    // FIXME: must write at pageid
+    pub fn write_page(&mut self, _pageid: PageId, page_data: &mut [u8]) -> Result<()> {
+        let mut buffer = [0; 64];
+        let n: usize = self.file.write(&mut buffer[..])?;
+        page_data[..n].copy_from_slice(&buffer[..n]);
+        Ok(())
     }
 }

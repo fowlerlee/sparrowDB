@@ -23,4 +23,5 @@ pub enum IoType {
 
 pub enum IoOp {
     Read,
+    Write
 }
