@@ -74,7 +74,7 @@ impl LRUKReplacer {
     #[allow(non_snake_case)]
     fn Evict(&mut self) -> Option<FrameId> {
         // find Node[n].frame_id = \A n \in Nodes: Node[n].k_b_d = MAXIMUM({Node[n].k_b_d})
-        let _now = SystemTime::now()
+        let now = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .expect("Time went backwards")
             .as_nanos() as usize;
@@ -102,10 +102,21 @@ impl LRUKReplacer {
             //             evictable[i].k_ = now - evictable[i].history[2];
             //             evictable[i + 1].k_ = now - evictable[i + 1].history[2];
             //         }
-            
+
             // evictable: [A,B,C,D]
             let (left, right) = evictable.split_at_mut(i + 1); // (left: [A], [B,C,D])
-            if left.last().unwrap().k_ > right[0].k_ {
+            if left.last().unwrap().k_ == right.first().unwrap().k_ {
+                if left.last().unwrap().history[0] < right.first().unwrap().history[0] {
+                    if let Some(node) = self.node_store.remove(&left.last().unwrap().fid) {
+                        return Some(node.fid);
+                    } else {
+                        let node = self.node_store.remove(&left.last().unwrap().fid);
+                        return Some(node.unwrap().fid);
+                    }
+                }
+                break;
+            }
+            if (now - left.last().unwrap().k_) > (now - right[0].k_) {
                 // if A.k_ > B.k_ {
                 std::mem::swap(&mut left.last().unwrap(), &mut right.first().unwrap());
                 // [B, A, C, D]
