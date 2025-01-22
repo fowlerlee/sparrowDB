@@ -148,7 +148,11 @@ impl LRUKReplacer {
 
     #[allow(non_snake_case)]
     fn Remove(&mut self, frame_id_t: FrameId) {
-        self.node_store.get_mut(&frame_id_t).unwrap().history.clear();
+        self.node_store
+            .get_mut(&frame_id_t)
+            .unwrap()
+            .history
+            .clear();
     }
 
     #[allow(non_snake_case)]
