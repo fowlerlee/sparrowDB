@@ -4,15 +4,91 @@ use std::fmt::{self, Debug, Formatter};
 #[allow(unused)]
 use std::io::{Read, Result, Seek, SeekFrom, Write};
 use std::sync::Arc;
+use std::fs;
+use std::path::Path;
+
+use super::io_rate_limiter::get_io_rate_limiter;
 
 pub struct File {
-    inner: std::fs::File,
+    inner: fs::File,
     limiter: Option<Arc<IoRateLimiter>>,
 }
 
 impl Debug for File {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(f, "{:?}", self.inner)
+    }
+}
+
+
+impl File {
+    pub fn open<P: AsRef<Path>>(path: P) -> Result<File> {
+        let inner = fs::File::open(path)?;
+        Ok(File {
+            inner,
+            limiter: get_io_rate_limiter(),
+        })
+    }
+
+    #[cfg(test)]
+    pub fn open_with_limiter<P: AsRef<Path>>(
+        path: P,
+        limiter: Option<Arc<IoRateLimiter>>,
+    ) -> Result<File> {
+        let inner = fs::File::open(path)?;
+        Ok(File { inner, limiter })
+    }
+
+    pub fn create<P: AsRef<Path>>(path: P) -> Result<File> {
+        let inner = fs::File::create(path)?;
+        Ok(File {
+            inner,
+            limiter: get_io_rate_limiter(),
+        })
+    }
+
+    #[cfg(test)]
+    pub fn create_with_limiter<P: AsRef<Path>>(
+        path: P,
+        limiter: Option<Arc<IoRateLimiter>>,
+    ) -> Result<File> {
+        let inner = fs::File::create(path)?;
+        Ok(File { inner, limiter })
+    }
+
+    pub fn from_raw_file(file: fs::File) -> Result<File> {
+        Ok(File {
+            inner: file,
+            limiter: get_io_rate_limiter(),
+        })
+    }
+
+    pub fn sync_all(&self) -> Result<()> {
+        self.inner.sync_all()
+    }
+
+    pub fn sync_data(&self) -> Result<()> {
+        self.inner.sync_data()
+    }
+
+    pub fn set_len(&self, size: u64) -> Result<()> {
+        self.inner.set_len(size)
+    }
+
+    pub fn metadata(&self) -> Result<fs::Metadata> {
+        self.inner.metadata()
+    }
+
+    pub fn try_clone(&self) -> Result<File> {
+        let inner = self.inner.try_clone()?;
+        Ok(File {
+            inner,
+            limiter: get_io_rate_limiter(),
+        })
+    }
+
+    pub fn set_permissions(&self, perm: fs::Permissions) -> Result<()> {
+        self.inner.set_permissions(perm)
     }
 }
 

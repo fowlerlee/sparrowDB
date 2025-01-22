@@ -1,3 +1,7 @@
+use lazy_static::lazy_static;
+use parking_lot::Mutex;
+use std::sync::Arc;
+
 pub struct IoRateLimiter {}
 
 impl IoRateLimiter {
@@ -23,5 +27,13 @@ pub enum IoType {
 
 pub enum IoOp {
     Read,
-    Write
+    Write,
+}
+
+lazy_static! {
+    static ref IO_RATE_LIMITER: Mutex<Option<Arc<IoRateLimiter>>> = Mutex::new(None);
+}
+
+pub fn get_io_rate_limiter() -> Option<Arc<IoRateLimiter>> {
+    (*IO_RATE_LIMITER.lock()).clone()
 }

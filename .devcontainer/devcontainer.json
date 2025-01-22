@@ -3,7 +3,7 @@
 	"extensions": [
 		"rust-lang.rust-analyzer",
 		"serayuzgur.crates",
-		"vadimcn.vscode-lldb"
+		"vadimcn.vscode-lldb",
 	],
 	"dockerFile": "Dockerfile",
 	"settings": {

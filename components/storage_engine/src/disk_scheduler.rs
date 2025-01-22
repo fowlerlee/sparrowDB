@@ -17,16 +17,56 @@
 // This should not return until the DiskScheduler's destructor is called.
 
 use crate::disk_manager::DiskManager;
-use crate::page::Page;
+use crate::page::PageId;
+use std::fmt::{Debug, Formatter, Result};
 use std::sync::{Arc, Condvar, Mutex};
 use std::{collections::VecDeque, thread};
+
 #[allow(dead_code)]
-struct DiskRequest {}
+struct DiskRequest {
+    is_write: bool,
+    // data: &'a char, should be a pointer to data but we are getting invariant Type violations
+    data: char,
+    page_id: PageId,
+    callback: Box<dyn Fn(bool) -> ()>,
+}
+
+fn my_callback(success: bool) {
+    println!(
+        "Named function callback: {}",
+        if success { "Yes" } else { "No" }
+    );
+}
+
+// we want to pass the DiskRequest between threads so i need to be bad here
+unsafe impl Send for DiskRequest {}
+unsafe impl Sync for DiskRequest {}
+
+impl Default for DiskRequest {
+    fn default() -> Self {
+        Self {
+            is_write: false,
+            data: 'a',
+            page_id: 0,
+            callback: Box::new(my_callback),
+        }
+    }
+}
+
+impl Debug for DiskRequest {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        f.debug_struct("DiskRequest")
+            .field("is_write", &self.is_write)
+            .field("data", &self.data)
+            .field("page_id", &self.page_id)
+            .finish()
+    }
+}
 
 #[allow(dead_code)]
 struct DiskScheduler<'a> {
     disk_manager: &'a DiskManager,
-    channel: Arc<(Mutex<VecDeque<Page>>, Condvar)>, // Channel to coordinate threads
+    channel: Arc<(Mutex<VecDeque<DiskRequest>>, Condvar)>, // Channel to coordinate threads
 }
 
 impl<'a> DiskScheduler<'a> {
@@ -45,17 +85,27 @@ impl<'a> DiskScheduler<'a> {
 
         thread::spawn(move || {
             let mut guard = channel_clone.0.lock().unwrap();
-            let binding = Page::new(1usize, vec![]);
-            guard.push_back(binding); // add the page
+            guard.pop_back(); // remove item from back
+                              // channel_clone.1.wait(guard)
+        });
+    }
+    // TODO: add a condvar relationship here for taking from and putting on the vecdeq
+    #[allow(dead_code)]
+    pub fn schedule(&mut self, request: DiskRequest) {
+        let channel_clone = Arc::clone(&self.channel);
+        // let mutcond: Arc<(Mutex<VecDeque<DiskRequest>>, Condvar)> =
+        //     Arc::new((Mutex::new(VecDeque::new()), Condvar::new()));
+
+        // let &(ref mtx, ref cnd) = &*self.channel;
+        thread::spawn(move || {
+            let mut guard = channel_clone.0.lock().unwrap();
+            let disk_request = request;
+            guard.push_back(disk_request); // add the DiskRequest to queue
             println!(
                 "Worker thread executed and set the value to {:?}",
                 guard.get(0)
             );
             // channel_clone.1.wait(guard)
         });
-    }
-    #[allow(dead_code)]
-    pub fn schedule(_request: DiskRequest) {
-        
     }
 }
