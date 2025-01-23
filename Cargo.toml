@@ -15,7 +15,7 @@ members = [
     "components/storage_engine",
     "components/buffer", 
     "components/utils", 
-    "components/common"]
+    "components/common", "components/mvcc"]
 
 [dependencies]
 file_system = { path = "components/file_system" }
