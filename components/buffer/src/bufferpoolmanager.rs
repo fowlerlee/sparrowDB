@@ -3,25 +3,15 @@ use std::sync::atomic::AtomicUsize;
 use std::sync::{Arc, Mutex};
 use std::time::{SystemTime, UNIX_EPOCH};
 
+use std::fs::OpenOptions;
+use storage_engine::disk_manager::DiskManager;
+use storage_engine::disk_scheduler::DiskScheduler;
 use storage_engine::page::{Page, PageId};
 
 type FrameId = usize;
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 struct FrameHeader {}
-
-// Evict() -> std::optional<frame_id_t> : Evict the frame that has the largest backward k-distance compared to all other evictable frames being tracked by the Replacer. If there are no evictable frames, return std::nullopt.
-// RecordAccess(frame_id_t frame_id) : Record that the given frame has been accessed at the current timestamp. This method should be called after a page has been pinned in the BufferPoolManager.
-// Remove(frame_id_t frame_id) : Clear all access history associated with a frame. This method should be called only when a page is deleted in the BufferPoolManager.
-// SetEvictable(frame_id_t frame_id, bool set_evictable) : This method controls whether a frame is evictable or not. It also controls the LRUKReplacer's size. You'll know when to call this function when you implement the BufferPoolManager. To be specific, when the pin count of a page hits 0, its corresponding frame should be marked as evictable.
-// Size() -> size_t : This method returns the number of evictable frames that are currently in the LRUKReplacer.
-
-// [[maybe_unused]] std::unordered_map<frame_id_t, LRUKNode> node_store_;
-//   [[maybe_unused]] size_t current_timestamp_{0};
-//   [[maybe_unused]] size_t curr_size_{0};
-//   [[maybe_unused]] size_t replacer_size_;
-//   [[maybe_unused]] size_t k_;
-//   [[maybe_unused]] std::mutex latch_;
 
 // Notes on algorithm:
 //
@@ -52,6 +42,18 @@ struct LRUNode {
     k_: usize,
     fid: FrameId,
     is_evictable: bool,
+}
+
+impl LRUNode {
+    #[allow(dead_code)]
+    pub fn new(frame_id: FrameId) -> Self {
+        Self {
+            history: vec![],
+            k_: 0,
+            fid: frame_id,
+            is_evictable: false,
+        }
+    }
 }
 
 #[allow(dead_code)]
@@ -89,20 +91,7 @@ impl LRUKReplacer {
         // [A,B,C,D]
         for i in 0..evictable.len() - 1 {
             // IF Nodes[n].HISTORY.len() < 2 THEN Nodes[n].k_b_d = INFINITY
-            //  if left.last().unwrap().history.len() < 2 {
-            //             evictable[i].k_ = usize::MAX;
-            //         }
-            //         if right[i + 1].history.len() < 2 {
-            //             evictable[i + 1].k_ = usize::MAX;
-            //         }
-
-            //         if evictable[i].k_ == evictable[i + 1].k_ {
-            //             if evictable[i].history[0] < evictable[i + 1].history[0] {}
-            //         } else {
-            //             evictable[i].k_ = now - evictable[i].history[2];
-            //             evictable[i + 1].k_ = now - evictable[i + 1].history[2];
-            //         }
-            // TODO: evitable.iter().fold(0, |k, &x| { k + x })
+            // TODO: try the following: evitable.iter().fold(0, |k, &x| { k + x })
 
             // evictable: [A,B,C,D]
             let (left, right) = evictable.split_at_mut(i + 1); // (left: [A], [B,C,D])
@@ -180,10 +169,17 @@ pub struct BufferPoolManager {
     page_table: HashMap<PageId, usize>,
     free_frames: Vec<usize>,
     replacer: Box<LRUKReplacer>,
+    // disk_scheduler: DiskScheduler<T>,
 }
 
 impl BufferPoolManager {
+    #[allow(unused)]
     pub fn new(capacity: usize) -> Self {
+        let file = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .create(true) // Create the file if it doesn't exist
+            .open("disk_file.dat");
         Self {
             num_frames: 0,
             next_page: AtomicUsize::new(0),
@@ -194,6 +190,7 @@ impl BufferPoolManager {
             page_table: HashMap::with_capacity(capacity),
             free_frames: Vec::new(),
             replacer: Box::new(LRUKReplacer::default()),
+            // disk_scheduler: DiskScheduler::new(&DiskManager::new(file)),
         }
     }
 
@@ -205,9 +202,18 @@ impl BufferPoolManager {
 
         self.num_frames
     }
+
     #[allow(non_snake_case)]
     pub fn getBufferPoolSize(&self) -> usize {
         self.frames.len()
+    }
+
+    pub fn delete_page(&mut self, page_id: PageId) -> bool {
+        if self.page_table.contains_key(&page_id) {
+            self.page_table.remove(&page_id);
+            return true;
+        }
+        false
     }
 }
 
@@ -216,7 +222,15 @@ mod test {
     use super::*;
 
     #[test]
-    fn test_cache() {
-        LRUKReplacer::new();
+    fn test_cache_eviction() {
+        let mut lru = LRUKReplacer::new();
+        lru.node_store.insert(0, LRUNode::default());
+        lru.node_store.insert(1, LRUNode::new(1));
+        lru.node_store.insert(2, LRUNode::new(2));
+        lru.node_store.insert(3, LRUNode::new(3));
+        let x0 = 1usize;
+        lru.SetEvictable(x0, true);
+        let y0 = lru.Evict().unwrap();
+        assert_eq!(x0, y0)
     }
 }

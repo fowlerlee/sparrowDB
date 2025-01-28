@@ -64,7 +64,7 @@ impl Debug for DiskRequest {
 }
 
 #[allow(dead_code)]
-struct DiskScheduler<'a> {
+pub struct DiskScheduler<'a> {
     disk_manager: &'a DiskManager,
     channel: Arc<(Mutex<VecDeque<DiskRequest>>, Condvar)>, // Channel to coordinate threads
 }
