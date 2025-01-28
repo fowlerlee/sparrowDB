@@ -23,7 +23,7 @@ use std::sync::{Arc, Condvar, Mutex};
 use std::{collections::VecDeque, thread};
 
 #[allow(dead_code)]
-struct DiskRequest {
+pub struct DiskRequest {
     is_write: bool,
     // data: &'a char, should be a pointer to data but we are getting invariant Type violations
     data: char,
