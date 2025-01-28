@@ -102,6 +102,7 @@ impl LRUKReplacer {
             //             evictable[i].k_ = now - evictable[i].history[2];
             //             evictable[i + 1].k_ = now - evictable[i + 1].history[2];
             //         }
+            // TODO: evitable.iter().fold(0, |k, &x| { k + x })
 
             // evictable: [A,B,C,D]
             let (left, right) = evictable.split_at_mut(i + 1); // (left: [A], [B,C,D])

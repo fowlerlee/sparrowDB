@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 #[allow(dead_code)]
-struct Node <T> {
+struct Node<T> {
     keys: Vec<T>,
     children: Vec<Node<T>>,
     is_leaf: bool,
@@ -11,5 +11,11 @@ struct Node <T> {
 }
 #[allow(dead_code)]
 struct BPlusTree<T> {
-    nodes: HashMap<u128, Node<T>>
+    nodes: HashMap<u128, Node<T>>,
 }
+#[allow(dead_code)]
+pub enum NodeType {
+    Leaf,
+    Regular,
+}
+

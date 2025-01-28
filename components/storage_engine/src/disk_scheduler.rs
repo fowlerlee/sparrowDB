@@ -85,8 +85,10 @@ impl<'a> DiskScheduler<'a> {
 
         thread::spawn(move || {
             let mut guard = channel_clone.0.lock().unwrap();
-            guard.pop_back(); // remove item from back
-                              // channel_clone.1.wait(guard)
+            if !guard.is_empty() {
+                guard.pop_back(); // remove item from back
+            }
+            // channel_clone.1.wait(guard)
         });
     }
     // TODO: add a condvar relationship here for taking from and putting on the vecdeq

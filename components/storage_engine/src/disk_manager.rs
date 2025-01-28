@@ -35,7 +35,7 @@ impl DiskManager {
         page_data[..].copy_from_slice(&buffer[..]);
         TxnResult::Ok(self.file.write(&mut buffer[..]).unwrap())
     }
-    
+
     pub fn increase_disk_space(&mut self, pages: usize) {
         let mut guard = self.pages.lock().unwrap();
         if *guard < self.capacity {
@@ -47,4 +47,6 @@ impl DiskManager {
         }
         self.file.set_len(self.capacity as u64).unwrap();
     }
+
+    pub fn shutdown(&self) {}
 }
