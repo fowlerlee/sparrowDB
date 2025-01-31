@@ -28,7 +28,7 @@ pub struct DiskRequest {
     // data: &'a char, should be a pointer to data but we are getting invariant Type violations
     data: char,
     page_id: PageId,
-    callback: Box<dyn Fn(bool) -> ()>,
+    callback: Box<dyn Fn(bool)>,
 }
 
 fn my_callback(success: bool) {
@@ -105,7 +105,7 @@ impl DiskScheduler {
             guard.push_back(disk_request); // add the DiskRequest to queue
             println!(
                 "Worker thread executed and set the value to {:?}",
-                guard.get(0)
+                guard.front()
             );
             // channel_clone.1.wait(guard)
         });

@@ -6,6 +6,6 @@ mod settings {
 
     // FIXME:
     pub fn get_io_type() -> IoType {
-        return IoType::Flush;
+        IoType::Flush
     }
 }

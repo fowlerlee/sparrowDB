@@ -31,9 +31,9 @@ impl DiskManager {
 
     // FIXME: must write at pageid
     pub fn write_page(&mut self, _pageid: PageId, page_data: &mut [u8]) -> TxnResult<usize, ()> {
-        let mut buffer = [0; 64];
+        let buffer = [0; 64];
         page_data[..].copy_from_slice(&buffer[..]);
-        TxnResult::Ok(self.file.write(&mut buffer[..]).unwrap())
+        TxnResult::Ok(self.file.write(&buffer[..]).unwrap())
     }
 
     pub fn increase_disk_space(&mut self, pages: usize) {

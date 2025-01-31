@@ -14,8 +14,8 @@ impl Node {
     fn new(links: Vec<Link>, offset: u64, command: String) -> Rc<RefCell<Node>> {
         Rc::new(RefCell::new(Node {
             next: links,
-            offset: offset,
-            command: command,
+            offset,
+            command,
         }))
     }
 }
@@ -35,7 +35,7 @@ impl SkipList {
         Self {
             head: None,
             tails: vec![None; max_level + 1],
-            max_level: max_level,
+            max_level,
             length: 0,
         }
     }
@@ -128,7 +128,7 @@ impl ListIterator {
     fn new(start_at: Option<Rc<RefCell<Node>>>, level: usize) -> Self {
         Self {
             current: start_at,
-            level: level,
+            level,
         }
     }
 }
@@ -160,7 +160,7 @@ impl std::fmt::Debug for SkipList {
                     for n in self.iter_level(level) {
                         let _ = write!(f, "[{}] ", n.0);
                     }
-                    let _ = writeln!(f, "");
+                    let _ = writeln!(f);
                 }
                 Ok(())
             }

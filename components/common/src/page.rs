@@ -16,7 +16,7 @@ pub struct Page {
 impl Page {
     pub fn new(id: usize, data: Vec<u8>) -> Self {
         Self {
-            id: id,
+            id,
             data: Mutex::new(data),
             pin_count: AtomicUsize::new(0),
             is_dirty: AtomicBool::new(false),

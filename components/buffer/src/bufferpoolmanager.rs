@@ -133,9 +133,9 @@ impl LRUKReplacer {
         let victim_id = evictable.last().unwrap().fid;
 
         if let Some(evictee) = self.node_store.remove(&victim_id) {
-            return Some(evictee.fid);
+            Some(evictee.fid)
         } else {
-            return None;
+            None
         }
     }
 
@@ -227,7 +227,7 @@ impl BufferPoolManager {
     pub fn new_page(&mut self) -> FrameId {
         // acquire mutex
         let guard = self.bpm_latch.lock().unwrap();
-
+        
         self.num_frames += 1;
         // FIXME: change struct for Value in page_table
         self.page_table.insert(self.num_frames, self.num_frames);
