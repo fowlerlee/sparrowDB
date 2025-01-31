@@ -5,3 +5,4 @@ edition = "2021"
 
 [dependencies]
 storage_engine = { path = "../storage_engine" }
+common = { path = "../common" }

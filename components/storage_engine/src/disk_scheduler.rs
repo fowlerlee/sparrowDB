@@ -17,7 +17,7 @@
 // This should not return until the DiskScheduler's destructor is called.
 
 use crate::disk_manager::DiskManager;
-use crate::page::PageId;
+use common::page::PageId;
 use std::fmt::{Debug, Formatter, Result};
 use std::sync::{Arc, Condvar, Mutex};
 use std::{collections::VecDeque, thread};
@@ -63,15 +63,15 @@ impl Debug for DiskRequest {
     }
 }
 
-#[allow(dead_code)]
-pub struct DiskScheduler<'a> {
-    disk_manager: &'a DiskManager,
+pub struct DiskScheduler {
+    #[allow(dead_code)]
+    disk_manager: DiskManager,
     channel: Arc<(Mutex<VecDeque<DiskRequest>>, Condvar)>, // Channel to coordinate threads
 }
 
-impl<'a> DiskScheduler<'a> {
+impl DiskScheduler {
     #[allow(dead_code)]
-    pub fn new(disk_manager: &'a DiskManager) -> Self {
+    pub fn new(disk_manager: DiskManager) -> Self {
         Self {
             disk_manager,
             channel: Arc::new((Mutex::new(VecDeque::new()), Condvar::new())), // Initialize channel
@@ -110,4 +110,13 @@ impl<'a> DiskScheduler<'a> {
             // channel_clone.1.wait(guard)
         });
     }
+}
+
+#[cfg(test)]
+mod test {
+    #[allow(unused)]
+    use super::*;
+
+    #[test]
+    fn test_disk_rw() {}
 }

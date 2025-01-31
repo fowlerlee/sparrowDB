@@ -109,6 +109,15 @@ impl SkipList {
     }
 }
 
+impl IntoIterator for SkipList {
+    type Item = (u64, String);
+    type IntoIter = ListIterator;
+
+    fn into_iter(self) -> Self::IntoIter {
+        ListIterator::new(self.head, 0)
+    }
+}
+
 #[allow(dead_code)]
 pub struct ListIterator {
     current: Option<Rc<RefCell<Node>>>,
@@ -120,6 +129,42 @@ impl ListIterator {
         Self {
             current: start_at,
             level: level,
+        }
+    }
+}
+
+impl Iterator for ListIterator {
+    type Item = (u64, String);
+
+    fn next(&mut self) -> Option<(u64, String)> {
+        let current = &self.current;
+        let mut result = None;
+        self.current = match current {
+            Some(ref current) => {
+                let current = current.borrow();
+                result = Some((current.offset, current.command.clone()));
+                current.next[self.level].clone()
+            },
+            _ => None
+        };
+        result
+    }
+}
+
+impl std::fmt::Debug for SkipList {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self.head {
+            Some(ref _head) => {
+                for level in (0..=self.max_level).rev() {
+                    let _ = write!(f, "{}: ", level);
+                    for n in self.iter_level(level) {
+                        let _ = write!(f, "[{}] ", n.0);
+                    }
+                    let _ = writeln!(f, "");
+                }
+                Ok(())
+            }
+            None => write!(f, "The list is empty: []")
         }
     }
 }

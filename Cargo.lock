@@ -18,6 +18,8 @@ checksum = "8f68f53c83ab957f72c32642f3868eec03eb974d1fb82e453128456482613d36"
 name = "buffer"
 version = "0.1.0"
 dependencies = [
+ "common",
+ "file_system",
  "storage_engine",
 ]
 
@@ -87,6 +89,7 @@ dependencies = [
 name = "mvcc"
 version = "0.1.0"
 dependencies = [
+ "common",
  "storage_engine",
 ]
 

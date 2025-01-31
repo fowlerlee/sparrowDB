@@ -3,15 +3,12 @@ use std::sync::atomic::AtomicUsize;
 use std::sync::{Arc, Mutex};
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use std::fs::OpenOptions;
-// use storage_engine::disk_manager::DiskManager;
-// use storage_engine::disk_scheduler::DiskScheduler;
-use storage_engine::page::{Page, PageId};
+use common::page::{Page, PageId};
+use common::types::FrameHeader;
+use storage_engine::disk_manager::DiskManager;
+use storage_engine::disk_scheduler::DiskScheduler;
 
 type FrameId = usize;
-
-#[derive(Copy, Clone, Debug, PartialEq)]
-struct FrameHeader {}
 
 // Notes on algorithm:
 //
@@ -65,12 +62,28 @@ struct LRUKReplacer {
     replacer_size: usize,
     k_: usize,
     latch: Arc<Mutex<LRUNode>>,
+    k_b_d_value: usize,
 }
 
 #[allow(dead_code)]
 impl LRUKReplacer {
-    fn new() -> Self {
-        Self::default()
+    #[allow(dead_code, unused)]
+    fn new(k_b_d: usize) -> Self {
+        Self {
+            node_store: HashMap::new(),
+            current_timestamp: 0,
+            current_size: 0,
+            replacer_size: 0,
+            k_: 0,
+            latch: Arc::new(Mutex::new(LRUNode {
+                history: vec![0; 5],
+                k_: 0,
+                fid: 0,
+                is_evictable: false,
+            })),
+            k_b_d_value: k_b_d,
+        }
+        // Self::default()
     }
 
     #[allow(non_snake_case)]
@@ -95,8 +108,13 @@ impl LRUKReplacer {
 
             // evictable: [A,B,C,D]
             let (left, right) = evictable.split_at_mut(i + 1); // (left: [A], [B,C,D])
-            if left.last().unwrap().k_ == right.first().unwrap().k_ {
-                if left.last().unwrap().history[0] < right.first().unwrap().history[0] {
+            if left.last().unwrap().k_ == right.first().unwrap().k_
+                && left.last().unwrap().history.len() >= self.k_b_d_value
+                && right.first().unwrap().history.len() >= self.k_b_d_value
+            {
+                if left.last().unwrap().history[self.k_b_d_value]
+                    < right.first().unwrap().history[self.k_b_d_value]
+                {
                     if let Some(node) = self.node_store.remove(&left.last().unwrap().fid) {
                         return Some(node.fid);
                     } else {
@@ -106,7 +124,7 @@ impl LRUKReplacer {
                 }
                 break;
             }
-            if (now - left.last().unwrap().k_) > (now - right[0].k_) {
+            if (now - left.last().unwrap().k_) > (now - right.first().unwrap().k_) {
                 // if A.k_ > B.k_ {
                 std::mem::swap(&mut left.last().unwrap(), &mut right.first().unwrap());
                 // [B, A, C, D]
@@ -133,6 +151,7 @@ impl LRUKReplacer {
                 .expect("Time went backwards")
                 .as_nanos();
             node.history.push(now as usize);
+            node.k_ = now as usize;
         }
     }
 
@@ -164,38 +183,51 @@ pub struct BufferPoolManager {
     next_page: AtomicUsize,
     bpm_latch: Arc<Mutex<Page>>,
     atomic_counter: AtomicUsize,
-    latch: Arc<Mutex<()>>,
     frames: Vec<FrameHeader>,
-    page_table: HashMap<PageId, usize>,
+    page_table: HashMap<PageId, FrameId>,
     free_frames: Vec<usize>,
     replacer: Box<LRUKReplacer>,
-    // disk_scheduler: DiskScheduler<T>,
+    disk_scheduler: DiskScheduler,
 }
+
+// NewPage() -> page_id_t
+// DeletePage(page_id_t page_id) -> bool
+// CheckedWritePage(page_id_t page_id) -> std::optional<WritePageGuard>
+// CheckedReadPage(page_id_t page_id) -> std::optional<ReadPageGuard>
+// FlushPage(page_id_t page_id) -> bool
+// FlushAllPages()
+// GetPinCount(page_id_t page_id)
 
 impl BufferPoolManager {
     #[allow(unused)]
-    pub fn new(capacity: usize) -> Self {
-        let file = OpenOptions::new()
-            .read(true)
-            .write(true)
-            .create(true) // Create the file if it doesn't exist
-            .open("disk_file.dat");
+    pub fn new(capacity: usize, k_b_d: usize) -> Self {
+        let new_file = file_system::file::File::create("disk_file.dat").unwrap();
+        // allocate all in-memory frames upfront
+        let mut frames_: Vec<FrameHeader> = Vec::new();
+        let mut free_frames_: Vec<usize> = Vec::new();
+        for _ in 0..capacity {
+            frames_.push(FrameHeader::default());
+            free_frames_.push(0usize);
+        }
+
         Self {
             num_frames: 0,
             next_page: AtomicUsize::new(0),
             bpm_latch: Arc::new(Mutex::new(Page::default())),
             atomic_counter: AtomicUsize::new(0),
-            latch: Arc::new(Mutex::new(())),
-            frames: Vec::new(),
+            frames: frames_,
             page_table: HashMap::with_capacity(capacity),
-            free_frames: Vec::new(),
-            replacer: Box::new(LRUKReplacer::default()),
-            // disk_scheduler: DiskScheduler::new(&DiskManager::new(file)),
+            free_frames: free_frames_,
+            replacer: Box::new(LRUKReplacer::new(k_b_d)),
+            disk_scheduler: DiskScheduler::new(DiskManager::new(new_file)),
         }
     }
 
-    #[allow(non_snake_case)]
-    pub fn NewPage(&mut self) -> FrameId {
+    #[allow(unused)]
+    pub fn new_page(&mut self) -> FrameId {
+        // acquire mutex
+        let guard = self.bpm_latch.lock().unwrap();
+
         self.num_frames += 1;
         // FIXME: change struct for Value in page_table
         self.page_table.insert(self.num_frames, self.num_frames);
@@ -203,11 +235,12 @@ impl BufferPoolManager {
         self.num_frames
     }
 
-    #[allow(non_snake_case)]
+    #[allow(unused, non_snake_case)]
     pub fn getBufferPoolSize(&self) -> usize {
         self.frames.len()
     }
 
+    #[allow(unused)]
     pub fn delete_page(&mut self, page_id: PageId) -> bool {
         if self.page_table.contains_key(&page_id) {
             self.page_table.remove(&page_id);
@@ -219,18 +252,33 @@ impl BufferPoolManager {
 
 #[cfg(test)]
 mod test {
+
     use super::*;
 
     #[test]
     fn test_cache_eviction() {
-        let mut lru = LRUKReplacer::new();
+        let mut lru = LRUKReplacer::new(2);
         lru.node_store.insert(0, LRUNode::default());
         lru.node_store.insert(1, LRUNode::new(1));
         lru.node_store.insert(2, LRUNode::new(2));
         lru.node_store.insert(3, LRUNode::new(3));
-        let x0 = 1usize;
-        lru.SetEvictable(x0, true);
-        let y0 = lru.Evict().unwrap();
-        assert_eq!(x0, y0)
+        lru.RecordAccess(0);
+        lru.RecordAccess(0);
+        lru.RecordAccess(0);
+        lru.RecordAccess(1);
+        lru.RecordAccess(1);
+        lru.RecordAccess(1);
+
+        lru.SetEvictable(1, true);
+        lru.SetEvictable(0, true);
+        let victim = lru.Evict().unwrap();
+
+        assert!(Some(victim).is_some());
+    }
+
+    #[test]
+    fn test_bpm_create() {
+        let mut bpm = BufferPoolManager::new(10, 2);
+        bpm.new_page();
     }
 }

@@ -1,11 +1,13 @@
 use super::settings::get_io_type;
 use crate::io_rate_limiter::{IoOp, IoRateLimiter};
+use std::env;
+use std::path::PathBuf;
 use std::fmt::{self, Debug, Formatter};
+use std::fs;
 #[allow(unused)]
 use std::io::{Read, Result, Seek, SeekFrom, Write};
-use std::sync::Arc;
-use std::fs;
 use std::path::Path;
+use std::sync::Arc;
 
 use super::io_rate_limiter::get_io_rate_limiter;
 
@@ -19,7 +21,6 @@ impl Debug for File {
         write!(f, "{:?}", self.inner)
     }
 }
-
 
 impl File {
     pub fn open<P: AsRef<Path>>(path: P) -> Result<File> {
@@ -40,7 +41,9 @@ impl File {
     }
 
     pub fn create<P: AsRef<Path>>(path: P) -> Result<File> {
-        let inner = fs::File::create(path)?;
+        let temp_dir = env::temp_dir();
+        let file_path: PathBuf = temp_dir.join(path);
+        let inner = fs::File::create(file_path)?;
         Ok(File {
             inner,
             limiter: get_io_rate_limiter(),
