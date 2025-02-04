@@ -1,37 +1,41 @@
+use std::sync::atomic::AtomicU64;
 
-#[derive(Clone, Debug,PartialEq)]
-pub enum TxnResult <T, E>{  
+#[derive(Clone, Debug, PartialEq)]
+pub enum TxnResult<T, E> {
     Ok(T),
     Err(E),
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Default)]
+pub type PageId = usize;
+
+#[derive(Debug)]
+#[allow(dead_code)]
 pub struct FrameHeader {
     is_dirty: bool,
-
+    data: Vec<u8>,
+    frame_id: usize,
+    pin_count: AtomicU64,
 }
 
-// FrameHeader::FrameHeader(frame_id_t frame_id) : frame_id_(frame_id), data_(BUSTUB_PAGE_SIZE, 0) { Reset(); }
+impl Default for FrameHeader {
+    fn default() -> Self {
+        Self {
+            is_dirty: false,
+            data: vec![0],
+            frame_id: 0,
+            pin_count: AtomicU64::new(0),
+        }
+    }
+}
 
-// /**
-//  * @brief Get a raw const pointer to the frame's data.
-//  *
-//  * @return const char* A pointer to immutable data that the frame stores.
-//  */
-// auto FrameHeader::GetData() const -> const char * { return data_.data(); }
-
-// /**
-//  * @brief Get a raw mutable pointer to the frame's data.
-//  *
-//  * @return char* A pointer to mutable data that the frame stores.
-//  */
-// auto FrameHeader::GetDataMut() -> char * { return data_.data(); }
-
-// /**
-//  * @brief Resets a `FrameHeader`'s member fields.
-//  */
-// void FrameHeader::Reset() {
-//   std::fill(data_.begin(), data_.end(), 0);
-//   pin_count_.store(0);
-//   is_dirty_ = false;
-// }
+impl FrameHeader {
+    #[allow(dead_code)]
+    fn new(frame_id: usize) -> Self {
+        Self {
+            is_dirty: false,
+            data: vec![0],
+            frame_id,
+            pin_count: AtomicU64::new(0),
+        }
+    }
+}

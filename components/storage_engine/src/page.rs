@@ -1,7 +1,7 @@
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::{Mutex, MutexGuard};
 
-pub type PageId = usize;
+
 // Note: we use u8 not char, so its mem efficient but we have
 // to do String::from_utf8(data.clone()).expect("Invalid UTF-8 data")
 #[derive(Default, Debug)]

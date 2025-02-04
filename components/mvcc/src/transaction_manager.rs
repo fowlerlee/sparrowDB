@@ -1,6 +1,6 @@
 
 use std::{collections::HashMap, sync::atomic::AtomicUsize};
-use common::page::PageId;
+use common::types::PageId;
 use std::cell::RefCell;
 
 use crate::types::{PageVersionInfo, Watermark};

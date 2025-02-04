@@ -1,0 +1,3 @@
+#! zsh
+cargo test --workspace
+

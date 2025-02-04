@@ -1,4 +1,5 @@
 pub mod bufferpoolmanager;
-mod test;
+pub mod test;
+mod page_guard;
 
 

@@ -17,7 +17,7 @@
 // This should not return until the DiskScheduler's destructor is called.
 
 use crate::disk_manager::DiskManager;
-use common::page::PageId;
+use common::types::PageId;
 use std::fmt::{Debug, Formatter, Result};
 use std::sync::{Arc, Condvar, Mutex};
 use std::{collections::VecDeque, thread};
@@ -25,8 +25,8 @@ use std::{collections::VecDeque, thread};
 #[allow(dead_code)]
 pub struct DiskRequest {
     is_write: bool,
-    // data: &'a char, should be a pointer to data but we are getting invariant Type violations
-    data: char,
+    // data: a slice of 8 bytes of type u8
+    data: [u8; 8],
     page_id: PageId,
     callback: Box<dyn Fn(bool)>,
 }
@@ -46,7 +46,7 @@ impl Default for DiskRequest {
     fn default() -> Self {
         Self {
             is_write: false,
-            data: 'a',
+            data: [0; 8],
             page_id: 0,
             callback: Box::new(my_callback),
         }

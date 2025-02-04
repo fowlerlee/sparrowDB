@@ -1,4 +1,4 @@
-use common::page::PageId;
+use common::types::PageId;
 use common::types::TxnResult;
 use file_system::file::File;
 use std::io::{Read, Result, Write};

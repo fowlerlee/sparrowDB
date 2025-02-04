@@ -1,10 +1,9 @@
 use std::collections::HashMap;
-use std::sync::atomic::AtomicUsize;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use common::page::{Page, PageId};
-use common::types::FrameHeader;
+use common::types::{FrameHeader, PageId};
 use storage_engine::disk_manager::DiskManager;
 use storage_engine::disk_scheduler::DiskScheduler;
 
@@ -83,7 +82,6 @@ impl LRUKReplacer {
             })),
             k_b_d_value: k_b_d,
         }
-        // Self::default()
     }
 
     #[allow(non_snake_case)]
@@ -131,7 +129,6 @@ impl LRUKReplacer {
             }
         }
         let victim_id = evictable.last().unwrap().fid;
-
         if let Some(evictee) = self.node_store.remove(&victim_id) {
             Some(evictee.fid)
         } else {
@@ -177,47 +174,51 @@ impl LRUKReplacer {
     }
 }
 
+// auto Size() const -> size_t;
+//   auto NewPage() -> page_id_t;
+//   auto DeletePage(page_id_t page_id) -> bool;
+//   auto CheckedWritePage(page_id_t page_id, AccessType access_type = AccessType::Unknown)
+//       -> std::optional<WritePageGuard>;
+//   auto CheckedReadPage(page_id_t page_id, AccessType access_type = AccessType::Unknown) -> std::optional<ReadPageGuard>;
+//   auto WritePage(page_id_t page_id, AccessType access_type = AccessType::Unknown) -> WritePageGuard;
+//   auto ReadPage(page_id_t page_id, AccessType access_type = AccessType::Unknown) -> ReadPageGuard;
+//   auto FlushPageUnsafe(page_id_t page_id) -> bool;
+//   auto FlushPage(page_id_t page_id) -> bool;
+//   void FlushAllPagesUnsafe();
+//   void FlushAllPages();
+//   auto GetPinCount(page_id_t page_id) -> std::optional<size_t>;
+
 #[allow(dead_code)]
 pub struct BufferPoolManager {
     num_frames: usize,
     next_page: AtomicUsize,
-    bpm_latch: Arc<Mutex<Page>>,
     atomic_counter: AtomicUsize,
     frames: Vec<FrameHeader>,
-    page_table: HashMap<PageId, FrameId>,
-    free_frames: Vec<usize>,
+    page_table: Mutex<HashMap<PageId, FrameId>>,
+    free_frames: Vec<[u8; 4096]>,
     replacer: Box<LRUKReplacer>,
     disk_scheduler: DiskScheduler,
 }
-
-// NewPage() -> page_id_t
-// DeletePage(page_id_t page_id) -> bool
-// CheckedWritePage(page_id_t page_id) -> std::optional<WritePageGuard>
-// CheckedReadPage(page_id_t page_id) -> std::optional<ReadPageGuard>
-// FlushPage(page_id_t page_id) -> bool
-// FlushAllPages()
-// GetPinCount(page_id_t page_id)
 
 impl BufferPoolManager {
     #[allow(unused)]
     pub fn new(capacity: usize, k_b_d: usize) -> Self {
         let new_file = file_system::file::File::create("disk_file.dat").unwrap();
         // allocate all in-memory frames upfront
-        let mut frames_: Vec<FrameHeader> = Vec::new();
-        let mut free_frames_: Vec<usize> = Vec::new();
+        let mut frames: Vec<FrameHeader> = Vec::new();
+        let mut free_frames = Vec::with_capacity(capacity);
         for _ in 0..capacity {
-            frames_.push(FrameHeader::default());
-            free_frames_.push(0usize);
+            frames.push(FrameHeader::default());
+            free_frames.push([0; 4096]);
         }
 
         Self {
             num_frames: 0,
             next_page: AtomicUsize::new(0),
-            bpm_latch: Arc::new(Mutex::new(Page::default())),
             atomic_counter: AtomicUsize::new(0),
-            frames: frames_,
-            page_table: HashMap::with_capacity(capacity),
-            free_frames: free_frames_,
+            frames,
+            page_table: Mutex::new(HashMap::with_capacity(capacity)),
+            free_frames,
             replacer: Box::new(LRUKReplacer::new(k_b_d)),
             disk_scheduler: DiskScheduler::new(DiskManager::new(new_file)),
         }
@@ -226,13 +227,17 @@ impl BufferPoolManager {
     #[allow(unused)]
     pub fn new_page(&mut self) -> FrameId {
         // acquire mutex
-        let guard = self.bpm_latch.lock().unwrap();
-        
+        let mut guard = self.page_table.lock().unwrap();
+        let number_of_frames = self.frames.len();
         self.num_frames += 1;
-        // FIXME: change struct for Value in page_table
-        self.page_table.insert(self.num_frames, self.num_frames);
-
-        self.num_frames
+        self.atomic_counter.fetch_add(1, Ordering::SeqCst);
+        let frame = FrameHeader::default();
+        self.frames.push(frame);
+        self.free_frames.pop();
+        let frame_id = guard
+            .insert(number_of_frames + 1, number_of_frames + 1)
+            .unwrap();
+        frame_id
     }
 
     #[allow(unused, non_snake_case)]
@@ -242,8 +247,13 @@ impl BufferPoolManager {
 
     #[allow(unused)]
     pub fn delete_page(&mut self, page_id: PageId) -> bool {
-        if self.page_table.contains_key(&page_id) {
-            self.page_table.remove(&page_id);
+        let mut guard = self.page_table.lock().unwrap();
+        if guard.contains_key(&page_id) {
+            self.num_frames -= 1;
+            self.atomic_counter.fetch_sub(1, Ordering::SeqCst);
+            self.frames.remove(page_id);
+            self.free_frames.push([0; 4096]);
+            guard.remove(&page_id);
             return true;
         }
         false
@@ -275,6 +285,47 @@ mod test {
 
         assert!(Some(victim).is_some());
     }
+
+    #[test]
+    fn test_bpm_new_page() {
+        let mut bpm = BufferPoolManager::new(10, 2);
+        let _frame_id = bpm.new_page();
+    }
+
+    //     TEST(BufferPoolManagerTest, DISABLED_VeryBasicTest) {
+    //   // A very basic test.
+
+    //   auto disk_manager = std::make_shared<DiskManager>(db_fname);
+    //   auto bpm = std::make_shared<BufferPoolManager>(FRAMES, disk_manager.get(), K_DIST);
+
+    //   page_id_t pid = bpm->NewPage();
+
+    //   char str[] = "Hello, world!";
+
+    //   // Check `WritePageGuard` basic functionality.
+    //   {
+    //     auto guard = bpm->WritePage(pid);
+    //     char *data = guard.GetDataMut();
+    //     snprintf(data, sizeof(str), "%s", str);
+    //     EXPECT_STREQ(data, str);
+    //   }
+
+    //   // Check `ReadPageGuard` basic functionality.
+    //   {
+    //     auto guard = bpm->ReadPage(pid);
+    //     const char *data = guard.GetData();
+    //     EXPECT_STREQ(data, str);
+    //   }
+
+    //   // Check `ReadPageGuard` basic functionality (again).
+    //   {
+    //     auto guard = bpm->ReadPage(pid);
+    //     const char *data = guard.GetData();
+    //     EXPECT_STREQ(data, str);
+    //   }
+
+    //   ASSERT_TRUE(bpm->DeletePage(pid));
+    // }
 
     #[test]
     fn test_bpm_create() {
