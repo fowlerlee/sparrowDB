@@ -1,7 +1,6 @@
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::{Mutex, MutexGuard};
 
-
 // Note: we use u8 not char, so its mem efficient but we have
 // to do String::from_utf8(data.clone()).expect("Invalid UTF-8 data")
 #[derive(Default, Debug)]
@@ -13,6 +12,7 @@ pub struct Page {
     is_dirty: AtomicBool,
 }
 
+#[allow(dead_code)]
 impl Page {
     pub fn new(id: usize, data: Vec<u8>) -> Self {
         Self {
@@ -22,7 +22,7 @@ impl Page {
             is_dirty: AtomicBool::new(false),
         }
     }
-    #[allow(dead_code)]
+
     fn reset_memory(&mut self) {
         self.id = 0usize;
         let mut mutex_guard = self.lock_data();

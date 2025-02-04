@@ -194,7 +194,7 @@ pub struct BufferPoolManager {
     next_page: AtomicUsize,
     atomic_counter: AtomicUsize,
     frames: Vec<FrameHeader>,
-    page_table: Mutex<HashMap<PageId, FrameId>>,
+    page_table: Arc<Mutex<HashMap<PageId, FrameId>>>,
     free_frames: Vec<[u8; 4096]>,
     replacer: Box<LRUKReplacer>,
     disk_scheduler: DiskScheduler,
@@ -217,7 +217,7 @@ impl BufferPoolManager {
             next_page: AtomicUsize::new(0),
             atomic_counter: AtomicUsize::new(0),
             frames,
-            page_table: Mutex::new(HashMap::with_capacity(capacity)),
+            page_table: Arc::new(Mutex::new(HashMap::with_capacity(capacity))),
             free_frames,
             replacer: Box::new(LRUKReplacer::new(k_b_d)),
             disk_scheduler: DiskScheduler::new(DiskManager::new(new_file)),
@@ -225,38 +225,39 @@ impl BufferPoolManager {
     }
 
     #[allow(unused)]
-    pub fn new_page(&mut self) -> FrameId {
+    pub fn new_page(&mut self) -> Option<FrameId> {
         // acquire mutex
         let mut guard = self.page_table.lock().unwrap();
-        let number_of_frames = self.frames.len();
         self.num_frames += 1;
         self.atomic_counter.fetch_add(1, Ordering::SeqCst);
+        self.frames.pop();
         let frame = FrameHeader::default();
         self.frames.push(frame);
         self.free_frames.pop();
-        let frame_id = guard
-            .insert(number_of_frames + 1, number_of_frames + 1)
-            .unwrap();
-        frame_id
+        if let Some(frame_id) = guard.insert(self.num_frames, self.num_frames) {
+            return Some(frame_id);
+        } else {
+            None
+        }
     }
 
     #[allow(unused, non_snake_case)]
-    pub fn getBufferPoolSize(&self) -> usize {
+    pub fn get_buffer_manager_size(&self) -> usize {
         self.frames.len()
     }
 
     #[allow(unused)]
     pub fn delete_page(&mut self, page_id: PageId) -> bool {
         let mut guard = self.page_table.lock().unwrap();
-        if guard.contains_key(&page_id) {
+        // if guard.contains_key(&page_id) {
             self.num_frames -= 1;
             self.atomic_counter.fetch_sub(1, Ordering::SeqCst);
             self.frames.remove(page_id);
             self.free_frames.push([0; 4096]);
             guard.remove(&page_id);
             return true;
-        }
-        false
+        // }
+        // false
     }
 }
 
@@ -289,7 +290,13 @@ mod test {
     #[test]
     fn test_bpm_new_page() {
         let mut bpm = BufferPoolManager::new(10, 2);
-        let _frame_id = bpm.new_page();
+        let _frame_id_0 = bpm.new_page();
+        let _frame_id_1 = bpm.new_page();
+        assert_eq!(bpm.get_buffer_manager_size(), 10);
+        
+        let successful_delete = bpm.delete_page(0);
+        assert!(successful_delete);
+        assert_eq!(bpm.num_frames, 1);
     }
 
     //     TEST(BufferPoolManagerTest, DISABLED_VeryBasicTest) {

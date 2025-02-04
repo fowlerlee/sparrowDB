@@ -9,6 +9,6 @@ mod test {
     #[test]
     fn test_buffering_memory() {
         let bpm = buffer::bufferpoolmanager::BufferPoolManager::new(10, 2);
-        assert_eq!(bpm.getBufferPoolSize(), 10);
+        assert_eq!(bpm.get_buffer_manager_size(), 10);
     }
 }
