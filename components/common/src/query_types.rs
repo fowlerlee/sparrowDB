@@ -70,6 +70,7 @@ impl Schema {
 }
 
 #[allow(dead_code)]
+#[derive(Debug, Default, Clone)]
 struct Tuple {
     val: i32,
 }
@@ -100,8 +101,25 @@ struct TableHeap {
 }
 
 #[allow(dead_code)]
+impl TableHeap {
+    fn new() -> Self {
+        Self { data: vec![] }
+    }
+
+    fn add_table_page(&mut self, page: TablePage) {
+        self.data.push(page)
+    }
+}
+
+#[allow(dead_code)]
 struct TablePage {
     data: Vec<Tuple>,
+}
+#[allow(dead_code)]
+impl TablePage {
+    fn new(data: Vec<Tuple>) -> Self {
+        Self { data }
+    }
 }
 
 #[cfg(test)]
@@ -115,6 +133,10 @@ mod test {
         let c3 = Column::new("address".to_string(), TypeId::VARCHAR, 20);
         let c4 = Column::new("salary".to_string(), TypeId::BIGINT, 4);
         let c5 = Column::new("age".to_string(), TypeId::SMALLINT, 4);
-        Schema::new(vec![c1, c2, c3, c4, c5]);
+        let schema = Schema::new(vec![c1, c2, c3, c4, c5]);
+        let tuple = Tuple::construct_from_schema(schema);
+        let table_page = TablePage::new(vec![tuple]);
+        let mut table_heap = TableHeap::new();
+        table_heap.add_table_page(table_page);
     }
 }

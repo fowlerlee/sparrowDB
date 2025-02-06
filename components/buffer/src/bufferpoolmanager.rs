@@ -233,8 +233,7 @@ impl BufferPoolManager {
         let frame = FrameHeader::default();
         self.frames.push(frame);
         self.free_frames.pop();
-        guard
-            .insert(self.num_frames, self.num_frames)
+        guard.insert(self.num_frames, self.num_frames)
     }
 
     pub fn get_buffer_manager_size(&self) -> usize {
@@ -256,7 +255,7 @@ impl BufferPoolManager {
         let writer = Arc::new(RwLock::new(WritePageGuard::new()));
         let result = match writer.try_write() {
             Ok(mut guard) => {
-                guard.write_page_data(vec![0u8]);
+                guard.write_page_data(vec![0u8; 4096]);
 
                 Ok(true)
             }
