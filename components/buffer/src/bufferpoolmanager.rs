@@ -1,9 +1,9 @@
+use crate::page_guard::WritePageGuard;
+use common::types::{FrameHeader, PageId};
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, RwLock};
 use std::time::{SystemTime, UNIX_EPOCH};
-
-use common::types::{FrameHeader, PageId};
 use storage_engine::disk_manager::DiskManager;
 use storage_engine::disk_scheduler::DiskScheduler;
 
@@ -200,8 +200,8 @@ pub struct BufferPoolManager {
     disk_scheduler: DiskScheduler,
 }
 
+#[allow(unused)]
 impl BufferPoolManager {
-    #[allow(unused)]
     pub fn new(capacity: usize, k_b_d: usize) -> Self {
         let new_file = file_system::file::File::create("disk_file.dat").unwrap();
         // allocate all in-memory frames upfront
@@ -224,7 +224,6 @@ impl BufferPoolManager {
         }
     }
 
-    #[allow(unused)]
     pub fn new_page(&mut self) -> Option<FrameId> {
         // acquire mutex
         let mut guard = self.page_table.lock().unwrap();
@@ -234,30 +233,41 @@ impl BufferPoolManager {
         let frame = FrameHeader::default();
         self.frames.push(frame);
         self.free_frames.pop();
-        if let Some(frame_id) = guard.insert(self.num_frames, self.num_frames) {
-            return Some(frame_id);
-        } else {
-            None
-        }
+        guard
+            .insert(self.num_frames, self.num_frames)
     }
 
-    #[allow(unused, non_snake_case)]
     pub fn get_buffer_manager_size(&self) -> usize {
         self.frames.len()
     }
 
-    #[allow(unused)]
     pub fn delete_page(&mut self, page_id: PageId) -> bool {
         let mut guard = self.page_table.lock().unwrap();
-        // if guard.contains_key(&page_id) {
-            self.num_frames -= 1;
-            self.atomic_counter.fetch_sub(1, Ordering::SeqCst);
-            self.frames.remove(page_id);
-            self.free_frames.push([0; 4096]);
-            guard.remove(&page_id);
-            return true;
-        // }
-        // false
+        self.num_frames -= 1;
+        self.atomic_counter.fetch_sub(1, Ordering::SeqCst);
+        self.frames.remove(page_id);
+        self.frames.push(FrameHeader::default());
+        self.free_frames.push([0; 4096]);
+        guard.remove(&page_id);
+        true
+    }
+
+    fn check_write_page(&self) -> Result<bool, String> {
+        let writer = Arc::new(RwLock::new(WritePageGuard::new()));
+        let result = match writer.try_write() {
+            Ok(mut guard) => {
+                guard.write_page_data(vec![0u8]);
+
+                Ok(true)
+            }
+            Err(_) => Err("failed to get the guard".to_string()),
+        };
+        result
+    }
+
+    fn check_page_exists_in_buffer(&self, data: Vec<u8>) -> bool {
+        true
+        // let frame = self.frames.iter().filter(|&x| x.data == data).collect::<[FrameHeader]>();
     }
 }
 
@@ -293,10 +303,33 @@ mod test {
         let _frame_id_0 = bpm.new_page();
         let _frame_id_1 = bpm.new_page();
         assert_eq!(bpm.get_buffer_manager_size(), 10);
-        
+
         let successful_delete = bpm.delete_page(0);
+        assert_eq!(bpm.get_buffer_manager_size(), 10);
         assert!(successful_delete);
         assert_eq!(bpm.num_frames, 1);
+    }
+
+    #[test]
+    fn test_page_guard_write() {
+        let bpm = Arc::new(Mutex::new(BufferPoolManager::new(10, 2)));
+        for _ in 0..10 {
+            let fake = Arc::clone(&bpm);
+            std::thread::spawn(move || {
+                let wrote_page = fake.lock().unwrap().check_write_page().unwrap();
+                assert!(wrote_page);
+            });
+        }
+        let mut guard = bpm.lock().unwrap();
+        guard.frames.push(FrameHeader::default());
+
+        let _default_frame = guard.frames.get(0).unwrap();
+        // for i in guard.frames {
+        //     i.read_data(data);
+        // }
+
+        // TODO: complete FrameHeader impl and this test
+        // guard.check_page_exists_in_buffer();
     }
 
     //     TEST(BufferPoolManagerTest, DISABLED_VeryBasicTest) {
