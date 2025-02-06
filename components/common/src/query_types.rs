@@ -1,3 +1,5 @@
+use std::sync::{Arc, Mutex};
+
 #[non_exhaustive]
 pub enum TypeId {
     INVALID = 0,
@@ -135,8 +137,13 @@ mod test {
         let c5 = Column::new("age".to_string(), TypeId::SMALLINT, 4);
         let schema = Schema::new(vec![c1, c2, c3, c4, c5]);
         let tuple = Tuple::construct_from_schema(schema);
-        let table_page = TablePage::new(vec![tuple]);
-        let mut table_heap = TableHeap::new();
-        table_heap.add_table_page(table_page);
+        let table_heap = Arc::new(Mutex::new(TableHeap::new()));
+        for _ in 0..20 {
+            let table_page = TablePage::new(vec![tuple.clone()]);
+            let fake = Arc::clone(&table_heap);
+            std::thread::spawn(move || {
+                fake.lock().unwrap().add_table_page(table_page);
+            });
+        }
     }
 }
