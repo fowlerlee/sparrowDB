@@ -200,6 +200,24 @@ pub struct BufferPoolManager {
     disk_scheduler: DiskScheduler,
 }
 
+
+//                     +-----------------------------+
+//                     |    Real-Time AI Query Engine |
+//                     +-----------------------------+
+//                                 |
+//     +------------------+-----------------------+
+//     |   AI Cache (LRU) |  Vectorized Execution |
+//     +------------------+-----------------------+
+//                        |                       |
+// +---------------------------+        +-------------------------------------+
+// | OLTAP Storage (KestrelDB) |        |  Real-Time Streaming Engine (OSS)   |
+// |  - Buffer Pool Manager    |        |  - Kafka / Redpanda                 |
+// |  - LRU Cache Optimization |        |  - AI-enhanced queries              |
+// +---------------------------+        +-------------------------------------+
+
+
+
+
 #[allow(unused)]
 impl BufferPoolManager {
     pub fn new(capacity: usize, k_b_d: usize) -> Self {
@@ -253,7 +271,7 @@ impl BufferPoolManager {
 
     fn check_write_page(&self) -> Result<bool, String> {
         let writer = Arc::new(RwLock::new(WritePageGuard::new()));
-        let result = match writer.try_write() {
+        let result = match writer.write() {
             Ok(mut guard) => {
                 guard.write_page_data(vec![0u8; 4096]);
 
@@ -312,7 +330,7 @@ mod test {
     #[test]
     fn test_page_guard_write() {
         let bpm = Arc::new(Mutex::new(BufferPoolManager::new(10, 2)));
-        for _ in 0..10 {
+        for _ in 0..100 {
             let fake = Arc::clone(&bpm);
             std::thread::spawn(move || {
                 let wrote_page = fake.lock().unwrap().check_write_page().unwrap();
