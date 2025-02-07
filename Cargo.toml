@@ -22,7 +22,8 @@ file_system = { path = "components/file_system" }
 concurrency_manager = { path = "components/concurrency_manager" }
 storage_engine = { path = "components/storage_engine" }
 query_executors = { path = "components/query_executors" }
-buffer = { path = "components/buffer"}
+buffer = { path = "components/buffer" }
+common = { path = "components/common" }
 
 [[test]]
 name = "integration_test"

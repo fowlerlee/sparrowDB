@@ -1,4 +1,7 @@
-use std::sync::{Arc, Mutex};
+use std::{
+    any::type_name,
+    sync::{Arc, Mutex},
+};
 
 #[non_exhaustive]
 pub enum TypeId {
@@ -98,7 +101,7 @@ impl Tuple {
 }
 
 #[allow(dead_code)]
-struct TableHeap {
+pub struct TableHeap {
     data: Vec<TablePage>,
 }
 
@@ -122,6 +125,20 @@ impl TablePage {
     fn new(data: Vec<Tuple>) -> Self {
         Self { data }
     }
+}
+
+pub fn get_demo_schema() -> TableHeap {
+    let c1 = Column::new("name".to_string(), TypeId::VARCHAR, 20);
+    let c2 = Column::new("lastname".to_string(), TypeId::VARCHAR, 20);
+    let c3 = Column::new("address".to_string(), TypeId::VARCHAR, 20);
+    let c4 = Column::new("salary".to_string(), TypeId::BIGINT, 4);
+    let c5 = Column::new("age".to_string(), TypeId::SMALLINT, 4);
+    let schema = Schema::new(vec![c1, c2, c3, c4, c5]);
+    let tuple = Tuple::construct_from_schema(schema);
+    let mut table_heap = TableHeap::new();
+    let table_page = TablePage::new(vec![tuple]);
+    table_heap.add_table_page(table_page);
+    return table_heap;
 }
 
 #[cfg(test)]

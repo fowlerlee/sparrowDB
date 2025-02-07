@@ -2566,6 +2566,7 @@ name = "sparrowdb"
 version = "0.1.0"
 dependencies = [
  "buffer",
+ "common",
  "concurrency_manager",
  "file_system",
  "query_executors",
