@@ -15,9 +15,9 @@ impl ReadPageGuard {
         }
     }
 
-    pub(crate) fn read_page_data(&mut self, data: Vec<u8>) {
+    pub(crate) fn read_page_data(&self, frame_id: usize) {
         let mut guard = self.operation.lock().unwrap();
-        guard.read_data(data);
+        guard.read_data(frame_id);
     }
 }
 
@@ -35,8 +35,12 @@ impl WritePageGuard {
         }
     }
 
-    pub(crate) fn write_page_data(&mut self, data: Vec<u8>) {
+    pub(crate) fn write_page_data(&mut self, frame_id: usize, data: Vec<u8>) -> Option<usize> {
         let mut guard = self.operation.lock().unwrap();
-        guard.write_data(data);
+        if let Some(val) = guard.write_data(frame_id, data) {
+            Some(val)
+        } else {
+            None
+        }
     }
 }

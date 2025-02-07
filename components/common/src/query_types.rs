@@ -1,7 +1,4 @@
-use std::{
-    any::type_name,
-    sync::{Arc, Mutex},
-};
+use std::sync::{Arc, Mutex};
 
 #[non_exhaustive]
 pub enum TypeId {

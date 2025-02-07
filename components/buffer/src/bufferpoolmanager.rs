@@ -1,4 +1,4 @@
-use crate::page_guard::WritePageGuard;
+use crate::page_guard::{ReadPageGuard, WritePageGuard};
 use common::types::{FrameHeader, PageId};
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -200,9 +200,8 @@ pub struct BufferPoolManager {
     disk_scheduler: DiskScheduler,
 }
 
-
 //                     +-----------------------------+
-//                     |    Real-Time AI Query Engine |
+//                     |   Real-Time AI Query Engine |
 //                     +-----------------------------+
 //                                 |
 //     +------------------+-----------------------+
@@ -210,13 +209,10 @@ pub struct BufferPoolManager {
 //     +------------------+-----------------------+
 //                        |                       |
 // +---------------------------+        +-------------------------------------+
-// | OLTAP Storage (KestrelDB) |        |  Real-Time Streaming Engine (OSS)   |
+// | HTAP Storage (KestrelDB)  |        |  Real-Time Streaming Engine (OSS)   |
 // |  - Buffer Pool Manager    |        |  - Kafka / Redpanda                 |
 // |  - LRU Cache Optimization |        |  - AI-enhanced queries              |
 // +---------------------------+        +-------------------------------------+
-
-
-
 
 #[allow(unused)]
 impl BufferPoolManager {
@@ -269,12 +265,28 @@ impl BufferPoolManager {
         true
     }
 
-    fn check_write_page(&self) -> Result<bool, String> {
+    // we handle insert and update in this method
+    fn check_write_page(&self, frame_id: FrameId, data: Vec<u8>) -> Result<bool, String> {
         let writer = Arc::new(RwLock::new(WritePageGuard::new()));
         let result = match writer.write() {
             Ok(mut guard) => {
-                guard.write_page_data(vec![0u8; 4096]);
+                // TODO: change to frameId in guard struct, but what about data to write?
+                if let Some(val) = guard.write_page_data(frame_id, data) {
+                    Ok(true)
+                } else {
+                    Ok(false)
+                }
+            }
+            Err(_) => Err("failed to get the guard".to_string()),
+        };
+        result
+    }
 
+    fn check_read_page(&self, frame_id: FrameId) -> Result<bool, String> {
+        let reader = Arc::new(RwLock::new(ReadPageGuard::new()));
+        let result = match reader.read() {
+            Ok(mut guard) => {
+                guard.read_page_data(frame_id);
                 Ok(true)
             }
             Err(_) => Err("failed to get the guard".to_string()),
@@ -328,25 +340,71 @@ mod test {
     }
 
     #[test]
-    fn test_page_guard_write() {
+    fn test_page_guard_write_blocking() {
+        let bpm = Arc::new(Mutex::new(BufferPoolManager::new(10, 2)));
+        for _ in 0..10 {
+            let fake = Arc::clone(&bpm);
+            std::thread::spawn(move || {
+                let wrote_page = fake
+                    .lock()
+                    .unwrap()
+                    .check_write_page(1usize, vec![5; 12])
+                    .unwrap();
+                assert!(!wrote_page);
+            });
+            // let fake = Arc::clone(&bpm);
+            // std::thread::spawn(move || {
+            //     fake.lock().unwrap().new_page();
+            // });
+        }
+        // TODO: Test whether after 100 is the pages editable again with write
+        // and simultaneous reads
+
+        // let mut guard = bpm.lock().unwrap();
+        // guard.frames.push(FrameHeader::default());
+
+        // let _default_frame = guard.frames.get(0).unwrap();
+    }
+
+    #[test]
+    fn test_page_guard_read_blocking() {
         let bpm = Arc::new(Mutex::new(BufferPoolManager::new(10, 2)));
         for _ in 0..100 {
             let fake = Arc::clone(&bpm);
             std::thread::spawn(move || {
-                let wrote_page = fake.lock().unwrap().check_write_page().unwrap();
+                let read_page = fake.lock().unwrap().check_read_page(1usize).unwrap();
+                assert!(read_page);
+            });
+        }
+    }
+
+    #[test]
+    fn test_page_no_data_loss() {
+        let bpm = Arc::new(Mutex::new(BufferPoolManager::new(10, 2)));
+        for _ in 0..100 {
+            let fake = Arc::clone(&bpm);
+            std::thread::spawn(move || {
+                let wrote_page = fake
+                    .lock()
+                    .unwrap()
+                    .check_write_page(1usize, vec![5; 4096])
+                    .unwrap();
                 assert!(wrote_page);
             });
         }
-        let mut guard = bpm.lock().unwrap();
-        guard.frames.push(FrameHeader::default());
 
-        let _default_frame = guard.frames.get(0).unwrap();
-        // for i in guard.frames {
-        //     i.read_data(data);
-        // }
+        for _ in 0..100 {
+            let fake = Arc::clone(&bpm);
+            std::thread::spawn(move || {
+                let read_page = fake.lock().unwrap().check_read_page(1usize).unwrap();
+                assert!(read_page);
+            });
+        }
+    }
 
+    #[test]
+    fn test_check_page_exists_in_buffer() {
         // TODO: complete FrameHeader impl and this test
-        // guard.check_page_exists_in_buffer();
     }
 
     //     TEST(BufferPoolManagerTest, DISABLED_VeryBasicTest) {

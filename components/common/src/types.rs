@@ -12,7 +12,7 @@ pub type PageId = usize;
 #[allow(dead_code)]
 pub struct FrameHeader {
     is_dirty: bool,
-    pub data: Vec<u8>,
+    pub data: [u8; 4096],
     pub frame_id: usize,
     pin_count: AtomicU64,
 }
@@ -29,7 +29,7 @@ impl Default for FrameHeader {
     fn default() -> Self {
         Self {
             is_dirty: false,
-            data: vec![0],
+            data: [0u8; 4096],
             frame_id: 0,
             pin_count: AtomicU64::new(0),
         }
@@ -62,21 +62,35 @@ impl FrameHeader {
     fn new(frame_id: usize) -> Self {
         Self {
             is_dirty: false,
-            data: vec![0],
+            data: [0; 4096],
             frame_id,
             pin_count: AtomicU64::new(0),
         }
     }
-
-    pub fn write_data(&mut self, data: Vec<u8>) {
-        self.data = data;
-        self.is_dirty = true;
-        self.pin_count.fetch_add(1, Ordering::SeqCst);
+    // TODO: handle the case of update and insert of the tuple record
+    pub fn write_data(&mut self, _frame_id: usize, data: Vec<u8>) -> Option<usize> {
+        let frame_id = _frame_id;
+        if frame_id + data.len() < self.data.len() {
+            for i in 0..data.len() {
+                self.data[frame_id + i] = data[i];
+            }
+            self.is_dirty = true;
+            self.pin_count.fetch_add(1, Ordering::SeqCst);
+            Some(frame_id)
+        } else {
+            None
+        }
     }
 
-    pub fn read_data(&mut self, data: Vec<u8>) {
-        self.data = data;
-        self.is_dirty = true;
-        self.pin_count.fetch_add(1, Ordering::SeqCst);
+    pub fn read_data(&mut self, frame_id: usize) -> Option<u8> {
+        let id = frame_id as u8;
+        let result = if self.data.contains(&id) {
+            self.is_dirty = true;
+            self.pin_count.fetch_add(1, Ordering::SeqCst);
+            Some(self.data[frame_id])
+        } else {
+            None
+        };
+        result
     }
 }
