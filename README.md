@@ -18,4 +18,4 @@ Please feel free to contribute should you desire to.
 
 
 
-<h3 align="center" > <img src="./docs/artwork/sparrowdb.jpg" width="400" height="400" style="center: 10px;"></h3
+<h3 align="center" > <img src="./docs/artwork/KestrelDB.png" width="400" height="500" style="center: 10px;"></h3
