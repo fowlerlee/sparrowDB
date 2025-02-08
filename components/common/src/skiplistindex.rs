@@ -45,14 +45,22 @@ mod test {
 
     #[test]
     fn test_insert() {
+        let tuple1 = 1u64;
+        let page_1 = 5;
         let tuple2 = 2u64;
-        let page_id = 7;
+        let page_2 = 7;
+        let tuple3 = 3u64;
+        let page_3 = 10;
         let l = SkipListIndex::new();
-        l.insert(1, 5, 10);
-        l.insert(tuple2, page_id, 10);
-        l.insert(0, 5, 10);
-
+        l.insert(tuple1, page_1, 10);
+        l.insert(tuple2, page_2, 10);
+        l.insert(tuple3, page_3, 10);
+        let t1 = l.find(tuple1).unwrap();
         let t2 = l.find(tuple2).unwrap();
-        assert_eq!(page_id, t2.0);
+        let t3 = l.find(tuple3).unwrap();
+        assert_eq!(page_1, t1.0);
+        assert_eq!(page_2, t2.0);
+        assert_eq!(page_3, t3.0);
+        assert_eq!(l.range_query(0, 2), vec![(t1), (t2)])
     }
 }

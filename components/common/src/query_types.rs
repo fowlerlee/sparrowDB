@@ -1,5 +1,7 @@
 use std::sync::{Arc, Mutex};
 
+use crate::skiplistindex::SkipListIndex;
+
 #[non_exhaustive]
 pub enum TypeId {
     INVALID = 0,
@@ -100,17 +102,23 @@ impl Tuple {
 #[allow(dead_code)]
 pub struct TableHeap {
     data: Vec<TablePage>,
+    index: SkipListIndex,
 }
 
 #[allow(dead_code)]
 impl TableHeap {
     fn new() -> Self {
-        Self { data: vec![] }
+        Self {
+            data: vec![],
+            index: SkipListIndex::new(),
+        }
     }
 
     fn add_table_page(&mut self, page: TablePage) {
         self.data.push(page)
     }
+
+    fn create_index(&mut self) {}
 }
 
 #[allow(dead_code)]
