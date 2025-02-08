@@ -265,19 +265,20 @@ impl BufferPoolManager {
         true
     }
 
-    // we handle insert and update in this method
     fn check_write_page(&self, frame_id: FrameId, data: Vec<u8>) -> Result<bool, String> {
         let writer = Arc::new(RwLock::new(WritePageGuard::new()));
         let result = match writer.write() {
             Ok(mut guard) => {
-                // TODO: change to frameId in guard struct, but what about data to write?
                 if let Some(val) = guard.write_page_data(frame_id, data) {
+                    // TODO: persist the frame_id from the write in meta data
+                    let frame_id = val;
                     Ok(true)
                 } else {
+                    // TODO: when this fails to write to mem then make new_page and retry write
                     Ok(false)
                 }
             }
-            Err(_) => Err("failed to get the guard".to_string()),
+            Err(_) => Err("failed to get the guard and write data".to_string()),
         };
         result
     }
