@@ -1,4 +1,6 @@
 use crate::page_guard::{ReadPageGuard, WritePageGuard};
+#[allow(unused)]
+use common::query_types::{get_demo_table_heap_with_n_page_m_tuples_each, TableHeap};
 use common::types::{FrameHeader, PageId};
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -198,6 +200,7 @@ pub struct BufferPoolManager {
     free_frames: Vec<[u8; 4096]>,
     replacer: Box<LRUKReplacer>,
     disk_scheduler: DiskScheduler,
+    table_heap: TableHeap,
 }
 
 //                     +-----------------------------+
@@ -235,6 +238,7 @@ impl BufferPoolManager {
             free_frames,
             replacer: Box::new(LRUKReplacer::new(k_b_d)),
             disk_scheduler: DiskScheduler::new(DiskManager::new(new_file)),
+            table_heap: TableHeap::new(capacity),
         }
     }
 
@@ -298,6 +302,10 @@ impl BufferPoolManager {
     fn check_page_exists_in_buffer(&self, data: Vec<u8>) -> bool {
         true
         // let frame = self.frames.iter().filter(|&x| x.data == data).collect::<[FrameHeader]>();
+    }
+
+    fn set_table_heap(&mut self, table_heap: TableHeap) {
+        self.table_heap = table_heap;
     }
 }
 
@@ -408,40 +416,14 @@ mod test {
         // TODO: complete FrameHeader impl and this test
     }
 
-    //     TEST(BufferPoolManagerTest, DISABLED_VeryBasicTest) {
-    //   // A very basic test.
-
-    //   auto disk_manager = std::make_shared<DiskManager>(db_fname);
-    //   auto bpm = std::make_shared<BufferPoolManager>(FRAMES, disk_manager.get(), K_DIST);
-
-    //   page_id_t pid = bpm->NewPage();
-
-    //   char str[] = "Hello, world!";
-
-    //   // Check `WritePageGuard` basic functionality.
-    //   {
-    //     auto guard = bpm->WritePage(pid);
-    //     char *data = guard.GetDataMut();
-    //     snprintf(data, sizeof(str), "%s", str);
-    //     EXPECT_STREQ(data, str);
-    //   }
-
-    //   // Check `ReadPageGuard` basic functionality.
-    //   {
-    //     auto guard = bpm->ReadPage(pid);
-    //     const char *data = guard.GetData();
-    //     EXPECT_STREQ(data, str);
-    //   }
-
-    //   // Check `ReadPageGuard` basic functionality (again).
-    //   {
-    //     auto guard = bpm->ReadPage(pid);
-    //     const char *data = guard.GetData();
-    //     EXPECT_STREQ(data, str);
-    //   }
-
-    //   ASSERT_TRUE(bpm->DeletePage(pid));
-    // }
+    #[test]
+    fn test_bpm_page_heap_and_pages_in_writes_and_reads() {
+        let mut bpm = BufferPoolManager::new(10, 2);
+        let table_heap = get_demo_table_heap_with_n_page_m_tuples_each(5, 20);
+        bpm.set_table_heap(table_heap);
+        // have data in the table heap.
+        bpm.table_heap.create_index();
+    }
 
     #[test]
     fn test_bpm_create() {

@@ -1,3 +1,5 @@
+use rand::random;
+#[allow(unused)]
 use std::sync::{Arc, Mutex};
 
 use crate::skiplistindex::SkipListIndex;
@@ -76,12 +78,14 @@ impl Schema {
 #[allow(dead_code)]
 #[derive(Debug, Default, Clone)]
 struct Tuple {
-    val: i32,
+    id: u64,
+    val: u64,
+    offset: usize,
 }
 
 #[allow(dead_code)]
 impl Tuple {
-    fn construct_from_schema(value: Schema) -> Self {
+    fn construct_from_schema(id: u64, value: Schema) -> Self {
         let mut val = 0;
         for i in value.columns {
             match i.id {
@@ -95,7 +99,21 @@ impl Tuple {
             }
         }
 
-        Self { val }
+        Self {
+            id,
+            val,
+            offset: val as usize,
+        }
+    }
+}
+#[allow(dead_code)]
+pub struct TablePage {
+    data: Vec<Tuple>,
+}
+#[allow(dead_code)]
+impl TablePage {
+    fn new(data: Vec<Tuple>) -> Self {
+        Self { data }
     }
 }
 
@@ -107,43 +125,65 @@ pub struct TableHeap {
 
 #[allow(dead_code)]
 impl TableHeap {
-    fn new() -> Self {
+    pub fn new(size: usize) -> Self {
         Self {
-            data: vec![],
+            data: Vec::with_capacity(size),
             index: SkipListIndex::new(),
         }
     }
 
-    fn add_table_page(&mut self, page: TablePage) {
+    pub fn add_table_page(&mut self, page: TablePage) {
         self.data.push(page)
     }
 
-    fn create_index(&mut self) {}
-}
-
-#[allow(dead_code)]
-struct TablePage {
-    data: Vec<Tuple>,
-}
-#[allow(dead_code)]
-impl TablePage {
-    fn new(data: Vec<Tuple>) -> Self {
-        Self { data }
+    pub fn create_index(&mut self) {
+        for i in self.data.iter() {
+            for j in i.data.iter() {
+                self.index.insert(j.id, j.val, j.offset);
+            }
+        }
     }
 }
 
-pub fn get_demo_schema() -> TableHeap {
+fn get_demo_columns() -> Vec<Column> {
     let c1 = Column::new("name".to_string(), TypeId::VARCHAR, 20);
     let c2 = Column::new("lastname".to_string(), TypeId::VARCHAR, 20);
     let c3 = Column::new("address".to_string(), TypeId::VARCHAR, 20);
     let c4 = Column::new("salary".to_string(), TypeId::BIGINT, 4);
     let c5 = Column::new("age".to_string(), TypeId::SMALLINT, 4);
-    let schema = Schema::new(vec![c1, c2, c3, c4, c5]);
-    let tuple = Tuple::construct_from_schema(schema);
-    let mut table_heap = TableHeap::new();
-    let table_page = TablePage::new(vec![tuple]);
-    table_heap.add_table_page(table_page);
-    return table_heap;
+    vec![c1, c2, c3, c4, c5]
+}
+
+fn get_demo_schema() -> Schema {
+    let columns = get_demo_columns();
+    let schema = Schema::new(columns);
+    schema
+}
+
+fn get_demo_tuple() -> Tuple {
+    let tuple = Tuple::construct_from_schema(random(), get_demo_schema());
+    tuple
+}
+
+fn get_demo_table_page(tuples: Vec<Tuple>) -> TablePage {
+    let table_page = TablePage::new(tuples);
+    table_page
+}
+
+pub fn get_demo_table_heap_with_n_page_m_tuples_each(n: usize, m: usize) -> TableHeap {
+    let mut tuples = vec![];
+    let mut table_pages = vec![];
+    for _ in 0..n {
+        for _ in 0..m {
+            tuples.push(get_demo_tuple());
+        }
+        table_pages.push(get_demo_table_page(tuples.to_owned()));
+    }
+    let mut table_heap = TableHeap::new(n);
+    for i in table_pages {
+        table_heap.add_table_page(i);
+    }
+    table_heap
 }
 
 #[cfg(test)]
@@ -158,8 +198,8 @@ mod test {
         let c4 = Column::new("salary".to_string(), TypeId::BIGINT, 4);
         let c5 = Column::new("age".to_string(), TypeId::SMALLINT, 4);
         let schema = Schema::new(vec![c1, c2, c3, c4, c5]);
-        let tuple = Tuple::construct_from_schema(schema);
-        let table_heap = Arc::new(Mutex::new(TableHeap::new()));
+        let tuple = Tuple::construct_from_schema(random(), schema);
+        let table_heap = Arc::new(Mutex::new(TableHeap::new(1)));
         for _ in 0..20 {
             let table_page = TablePage::new(vec![tuple.clone()]);
             let fake = Arc::clone(&table_heap);
