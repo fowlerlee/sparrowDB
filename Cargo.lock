@@ -2263,6 +2263,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "arrow 54.1.0",
+ "common",
  "datafusion",
  "datafusion-optimizer",
  "datafusion-sql",
