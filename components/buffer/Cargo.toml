@@ -7,6 +7,7 @@ edition = "2021"
 storage_engine = { path = "../storage_engine" }
 common = { path = "../common" }
 file_system = { path = "../file_system" }
+query_executors = { path = "../query_executors" }
 
 
 [dev-dependencies]

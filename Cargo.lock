@@ -664,6 +664,7 @@ version = "0.1.0"
 dependencies = [
  "common",
  "file_system",
+ "query_executors",
  "storage_engine",
 ]
 
@@ -780,10 +781,6 @@ dependencies = [
 [[package]]
 name = "common"
 version = "0.1.0"
-dependencies = [
- "rand 0.9.0",
- "skiplist",
-]
 
 [[package]]
 name = "concurrency_manager"
@@ -2269,6 +2266,8 @@ dependencies = [
  "datafusion",
  "datafusion-optimizer",
  "datafusion-sql",
+ "rand 0.9.0",
+ "skiplist",
  "sqlparser 0.54.0",
  "tokio",
 ]
