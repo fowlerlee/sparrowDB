@@ -22,7 +22,7 @@ impl Node {
 
 #[allow(dead_code)]
 #[derive(Clone)]
-struct SkipList {
+pub struct SkipList {
     head: Link,
     tails: Vec<Link>,
     max_level: usize,
@@ -144,8 +144,8 @@ impl Iterator for ListIterator {
                 let current = current.borrow();
                 result = Some((current.offset, current.command.clone()));
                 current.next[self.level].clone()
-            },
-            _ => None
+            }
+            _ => None,
         };
         result
     }
@@ -164,7 +164,7 @@ impl std::fmt::Debug for SkipList {
                 }
                 Ok(())
             }
-            None => write!(f, "The list is empty: []")
+            None => write!(f, "The list is empty: []"),
         }
     }
 }

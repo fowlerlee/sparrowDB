@@ -1,4 +1,4 @@
-use common::types::FrameHeader;
+use crate::frameheader::FrameHeader;
 use std::sync::{Arc, Mutex};
 
 #[allow(dead_code)]

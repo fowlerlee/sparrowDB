@@ -1,7 +1,8 @@
 use crate::page_guard::{ReadPageGuard, WritePageGuard};
 #[allow(unused)]
 use common::query_types::{get_demo_table_heap_with_n_page_m_tuples_each, TableHeap};
-use common::types::{FrameHeader, PageId};
+use crate::frameheader::FrameHeader;
+use common::types::PageId;
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex, RwLock};
@@ -200,7 +201,7 @@ pub struct BufferPoolManager {
     free_frames: Vec<[u8; 4096]>,
     replacer: Box<LRUKReplacer>,
     disk_scheduler: DiskScheduler,
-    table_heap: TableHeap,
+    pub table_heap: TableHeap,
 }
 
 //                     +-----------------------------+
@@ -304,7 +305,7 @@ impl BufferPoolManager {
         // let frame = self.frames.iter().filter(|&x| x.data == data).collect::<[FrameHeader]>();
     }
 
-    fn set_table_heap(&mut self, table_heap: TableHeap) {
+    pub fn set_table_heap(&mut self, table_heap: TableHeap) {
         self.table_heap = table_heap;
     }
 }

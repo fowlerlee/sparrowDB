@@ -136,12 +136,14 @@ impl TableHeap {
         self.data.push(page)
     }
 
-    pub fn create_index(&mut self) {
+    pub fn create_index(&mut self) -> Box<SkipListIndex> {
         for i in self.data.iter() {
             for j in i.data.iter() {
                 self.index.insert(j.id, j.val, j.offset);
             }
         }
+        let skip_list_index = self.index.clone();
+        Box::new(skip_list_index)
     }
 }
 
@@ -207,5 +209,15 @@ mod test {
                 fake.lock().unwrap().add_table_page(table_page);
             });
         }
+    }
+
+    #[test]
+    fn test_page_heap_create_index() {
+        // TODO: fix the bug in the range query for the table_heap as skip list is not working
+        let mut table_heap = get_demo_table_heap_with_n_page_m_tuples_each(5, 20);
+        let box_cloned_list = table_heap.create_index();
+        let a = table_heap.index.range_query(1, 100);
+        // let b = 20u64;
+        println!("{:?}; {:?}", a.get(0), box_cloned_list);
     }
 }
