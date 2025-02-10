@@ -1,5 +1,5 @@
 #[allow(dead_code)]
-pub enum TranasActionState {
+pub enum TransactionState {
     RUNNING,
     TAINTED,
     COMMITTED,
@@ -10,4 +10,9 @@ pub enum IsolationLevel {
     READUNCOMMITTED,
     SNAPSHOTISOLATION,
     SERIALIZABLE,
+}
+
+
+struct Transaction {
+    
 }

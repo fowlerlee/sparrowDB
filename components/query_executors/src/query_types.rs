@@ -57,7 +57,7 @@ impl Column {
     }
 }
 #[allow(dead_code)]
-struct Schema {
+pub(crate) struct Schema {
     columns: Vec<Column>,
     length: usize,
     tuple_is_inlined: bool,
@@ -213,7 +213,8 @@ mod test {
 
     #[test]
     fn test_page_heap_create_index() {
-        // TODO: fix the bug in the range query for the table_heap as skip list is not working
+        // TODO: fix the bug in the range query for the table_heap as skip list is not returning range for this test
+        // strangely it works in other test above?
         let mut table_heap = get_demo_table_heap_with_n_page_m_tuples_each(5, 20);
         let box_cloned_list = table_heap.create_index();
         let a = table_heap.index.range_query(1, 100);
