@@ -1,4 +1,3 @@
-pub mod transaction;
 mod transaction_manager;
 mod types;
 

@@ -2,10 +2,10 @@ use std::cell::RefCell;
 use std::sync::atomic::Ordering;
 use std::{collections::HashMap, sync::atomic::AtomicU32};
 
-use buffer::bufferpoolmanager::BufferPoolManager;
-use mvcc::transaction::Transaction;
-use query_executors::query_types::{Schema, TableHeap};
-use query_executors::skiplistindex::SkipListIndex;
+use crate::bufferpoolmanager::BufferPoolManager;
+use common::transaction::Transaction;
+use crate::query_types::{Schema, TableHeap};
+use crate::skiplistindex::SkipListIndex;
 // use skiplist::SkipMap;
 #[allow(dead_code)]
 enum IndexType {

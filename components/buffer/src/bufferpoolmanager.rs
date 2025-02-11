@@ -2,7 +2,7 @@ use crate::frameheader::FrameHeader;
 use crate::page_guard::{ReadPageGuard, WritePageGuard};
 use common::types::PageId;
 #[allow(unused)]
-use query_executors::query_types::{get_demo_table_heap_with_n_page_m_tuples_each, TableHeap};
+use crate::query_types::{get_demo_table_heap_with_n_page_m_tuples_each, TableHeap};
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex, RwLock};
@@ -252,6 +252,7 @@ impl BufferPoolManager {
         let frame = FrameHeader::default();
         self.frames.push(frame);
         self.free_frames.pop();
+        // self.table_heap.add_table_page(frame); //TODO: should this keep track of the pages in memory?
         guard.insert(self.num_frames, self.num_frames)
     }
 
@@ -360,19 +361,13 @@ mod test {
                     .unwrap()
                     .check_write_page(1usize, vec![5; 12])
                     .unwrap();
-                assert!(!wrote_page);
+                assert!(wrote_page);
             });
-            // let fake = Arc::clone(&bpm);
-            // std::thread::spawn(move || {
-            //     fake.lock().unwrap().new_page();
-            // });
         }
         // TODO: Test whether after 100 is the pages editable again with write
         // and simultaneous reads
-
         // let mut guard = bpm.lock().unwrap();
         // guard.frames.push(FrameHeader::default());
-
         // let _default_frame = guard.frames.get(0).unwrap();
     }
 
@@ -390,12 +385,12 @@ mod test {
 
     #[test]
     fn test_page_no_data_loss() {
-        let bpm = Arc::new(Mutex::new(BufferPoolManager::new(10, 2)));
+        let bpm = Arc::new(std::sync::RwLock::new(BufferPoolManager::new(10, 2)));
         for _ in 0..100 {
             let fake = Arc::clone(&bpm);
             std::thread::spawn(move || {
                 let wrote_page = fake
-                    .lock()
+                    .write()
                     .unwrap()
                     .check_write_page(1usize, vec![5; 4096])
                     .unwrap();
@@ -406,7 +401,7 @@ mod test {
         for _ in 0..100 {
             let fake = Arc::clone(&bpm);
             std::thread::spawn(move || {
-                let read_page = fake.lock().unwrap().check_read_page(1usize).unwrap();
+                let read_page = fake.read().unwrap().check_read_page(1usize).unwrap();
                 assert!(read_page);
             });
         }
@@ -427,8 +422,10 @@ mod test {
     }
 
     #[test]
-    fn test_bpm_create() {
+    fn test_bpm_create_table_heap() {
         let mut bpm = BufferPoolManager::new(10, 2);
+        
+        // bpm.table_heap.add_table_page(page);
         bpm.new_page();
     }
 }
