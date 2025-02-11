@@ -5,6 +5,7 @@ use std::sync::{Arc, Mutex};
 use crate::skiplistindex::SkipListIndex;
 
 #[non_exhaustive]
+#[derive(Clone)]
 pub enum TypeId {
     INVALID = 0,
     BOOLEAN,
@@ -34,6 +35,7 @@ impl TypeId {
 }
 
 #[allow(dead_code)]
+#[derive(Clone)]
 struct Column {
     name: String,
     id: TypeId,
@@ -57,7 +59,8 @@ impl Column {
     }
 }
 #[allow(dead_code)]
-pub(crate) struct Schema {
+#[derive(Default, Clone)]
+pub struct Schema {
     columns: Vec<Column>,
     length: usize,
     tuple_is_inlined: bool,
@@ -107,6 +110,7 @@ impl Tuple {
     }
 }
 #[allow(dead_code)]
+#[derive(Clone)]
 pub struct TablePage {
     data: Vec<Tuple>,
 }
@@ -118,6 +122,7 @@ impl TablePage {
 }
 
 #[allow(dead_code)]
+#[derive(Clone)]
 pub struct TableHeap {
     data: Vec<TablePage>,
     index: SkipListIndex,

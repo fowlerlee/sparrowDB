@@ -1,0 +1,10 @@
+[package]
+name = "query_planner"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+query_executors = { path = "../query_executors" }
+buffer = { path = "../buffer" }
+mvcc = { path = "../mvcc" }
+skiplist = "0.4"

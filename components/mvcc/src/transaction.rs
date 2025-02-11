@@ -12,7 +12,4 @@ pub enum IsolationLevel {
     SERIALIZABLE,
 }
 
-
-struct Transaction {
-    
-}
+pub struct Transaction {}

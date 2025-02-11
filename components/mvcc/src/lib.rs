@@ -1,8 +1,6 @@
-
-
+pub mod transaction;
 mod transaction_manager;
 mod types;
-mod transaction;
 
 #[cfg(test)]
 mod tests {
