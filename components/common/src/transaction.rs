@@ -1,4 +1,4 @@
-use std::sync::atomic::{AtomicI64, AtomicU64};
+use std::sync::atomic::AtomicU64;
 
 #[allow(dead_code)]
 pub enum TransactionState {

@@ -12,8 +12,7 @@ enum Statements {
     CREATE(String),
 }
 
-fn main() {
-    print!("start-up");
+fn print_logo() {
     println!(
         r#"
 ::::::::::::::::::::::::::::::::::::::::::::.....::::....................:::::::::::::::::::::::::::
@@ -89,15 +88,22 @@ fn main() {
          KestrelDB
 "#
     );
+}
+
+fn main() {
+    print!("start-up");
+    print_logo();
+
     println!("Enter a command (SELECT, CREATE, or EXIT to quit):");
 
     loop {
-        print!("> ");
+        print!(" > ");
         io::stdout().flush().unwrap();
 
         let mut input = String::new();
         io::stdin().read_line(&mut input).unwrap();
-        let input = input.trim().to_uppercase();
+        let upper = input.to_uppercase();
+        let input = upper.split_whitespace().collect::<Vec<&str>>();
 
         let mut bpm = BufferPoolManager::new(10, 2);
         bpm.table_heap = get_demo_table_heap_with_n_page_m_tuples_each(10, 10);
@@ -105,10 +111,10 @@ fn main() {
         catalog.lock().unwrap().bpm = bpm;
         let fake = Arc::clone(&catalog);
 
-        match input.as_str() {
-            "dt" => show_table(fake),
-            "SELECT" => handle_select(fake),
-            "CREATE" => handle_create(fake),
+        match input[0] {
+            "/DT" => show_table(fake),
+            "SELECT" => handle_select(fake, input.clone()),
+            "CREATE" => handle_create(fake, input.clone()),
             "EXIT" => {
                 println!("Goodbye from KestrelDB!");
                 break;
@@ -123,8 +129,13 @@ fn show_table(catalog: Arc<Mutex<Catalog>>) {
     guard.get_table(None);
 }
 
-fn handle_select(catalog: Arc<Mutex<Catalog>>) {
+fn handle_select(catalog: Arc<Mutex<Catalog>>, input: Vec<&str>) {
     let guard = catalog.lock().unwrap();
+
+    if input[2].to_string() != "FROM" {
+        return;
+    }
+    let _table = guard.get_table(Some(input[3].to_string()));
     println!(
         "{:?}",
         guard
@@ -137,9 +148,9 @@ fn handle_select(catalog: Arc<Mutex<Catalog>>) {
     )
 }
 
-fn handle_create(catalog: Arc<Mutex<Catalog>>) {
+fn handle_create(catalog: Arc<Mutex<Catalog>>, input: Vec<&str>) {
     let transaction = Transaction::new();
-    let table_name = "Apple".to_string();
+    let table_name = input[1].to_string();
     let schema = get_demo_schema();
     let mut guard = catalog.lock().unwrap();
     let table_info = guard.create_table(transaction, table_name, schema, true);
