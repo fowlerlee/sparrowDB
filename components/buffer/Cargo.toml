@@ -9,5 +9,11 @@ common = { path = "../common" }
 file_system = { path = "../file_system" }
 rand = "0.9.0"
 skiplist = "0.4"
+bincode = "1.3.3"
+serde = { version="1.0.217", features = ["derive"] }
+serde_bytes = "0.11.15"
+
 
 [dev-dependencies]
+
+

@@ -5,7 +5,7 @@ use std::sync::{Arc, Mutex};
 use crate::skiplistindex::SkipListIndex;
 
 #[non_exhaustive]
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum TypeId {
     INVALID = 0,
     BOOLEAN,
@@ -35,7 +35,7 @@ impl TypeId {
 }
 
 #[allow(dead_code)]
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 struct Column {
     name: String,
     id: TypeId,
@@ -59,7 +59,7 @@ impl Column {
     }
 }
 #[allow(dead_code)]
-#[derive(Default, Clone)]
+#[derive(Default, Clone, Debug)]
 pub struct Schema {
     columns: Vec<Column>,
     length: usize,
@@ -80,7 +80,7 @@ impl Schema {
 
 #[allow(dead_code)]
 #[derive(Debug, Default, Clone)]
-struct Tuple {
+pub struct Tuple {
     id: u64,
     val: u64,
     offset: usize,
@@ -109,10 +109,30 @@ impl Tuple {
         }
     }
 }
+
+// use serde::{Deserialize, Serialize};
+//       let mut serialized_tuples = [0u8; 4096];
+
+//         for (index, tuple) in data.iter().enumerate() {
+//             let mut tuple_serialized = [0u8; 24];
+//             let val_bytes = tuple.val.to_be_bytes();
+//             let id_bytes = tuple.id.to_be_bytes();
+//             let offset_bytes = tuple.offset.to_be_bytes();
+//             tuple_serialized[0..8].copy_from_slice(&id_bytes);
+//             tuple_serialized[8..16].copy_from_slice(&val_bytes);
+//             tuple_serialized[16..24].copy_from_slice(&offset_bytes);
+//             let offset = index * 24;
+//             serialized_tuples[offset..offset + 24].copy_from_slice(&tuple_serialized);
+//         }
+
+//         Self {
+//             data: serialized_tuples,
+//         }
+
 #[allow(dead_code)]
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct TablePage {
-    data: Vec<Tuple>,
+    pub data: Vec<Tuple>,
 }
 #[allow(dead_code)]
 impl TablePage {
@@ -122,9 +142,9 @@ impl TablePage {
 }
 
 #[allow(dead_code)]
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct TableHeap {
-    data: Vec<TablePage>,
+    pub data: Vec<TablePage>,
     index: SkipListIndex,
 }
 
@@ -161,7 +181,7 @@ fn get_demo_columns() -> Vec<Column> {
     vec![c1, c2, c3, c4, c5]
 }
 
-fn get_demo_schema() -> Schema {
+pub fn get_demo_schema() -> Schema {
     let columns = get_demo_columns();
     let schema = Schema::new(columns);
     schema

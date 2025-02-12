@@ -3,9 +3,9 @@ use std::sync::atomic::Ordering;
 use std::{collections::HashMap, sync::atomic::AtomicU32};
 
 use crate::bufferpoolmanager::BufferPoolManager;
-use common::transaction::Transaction;
 use crate::query_types::{Schema, TableHeap};
 use crate::skiplistindex::SkipListIndex;
+use common::transaction::Transaction;
 // use skiplist::SkipMap;
 #[allow(dead_code)]
 enum IndexType {
@@ -22,7 +22,8 @@ type TableId = u32;
 type IndexId = u32;
 
 #[allow(dead_code)]
-struct TableInfo {
+#[derive(Debug)]
+pub struct TableInfo {
     table_name: String,
     schema: Schema, // perhaps put on the heap?
     table_heap: Box<TableHeap>,
@@ -72,8 +73,8 @@ struct LockManager {}
 struct LogManager {}
 
 #[allow(dead_code)]
-struct Catalog {
-    bpm: BufferPoolManager,
+pub struct Catalog {
+    pub bpm: BufferPoolManager,
     logm: LogManager,
     lockm: LockManager,
     tables: HashMap<TableId, RefCell<TableInfo>>,
@@ -86,9 +87,9 @@ struct Catalog {
 
 #[allow(dead_code)]
 impl Catalog {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self {
-            bpm: BufferPoolManager::new(1, 5),
+            bpm: BufferPoolManager::new(0, 0),
             logm: LogManager::default(),
             lockm: LockManager::default(),
             tables: HashMap::new(),
@@ -129,9 +130,9 @@ impl Catalog {
         table_info.into_inner()
     }
 
-    pub fn get_table(&self, _table_name: TableName) {
-        // let _table_id = self.table_names.entry(table_name);
-        // self.tables.entry(table_id)
+    pub fn get_table(&self, _table_name: Option<String>) -> Vec<String> {
+        let keys: Vec<String> = self.table_names.keys().cloned().collect();
+        keys
     }
 }
 

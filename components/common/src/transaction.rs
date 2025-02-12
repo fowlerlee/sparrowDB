@@ -1,3 +1,5 @@
+use std::sync::atomic::{AtomicI64, AtomicU64};
+
 #[allow(dead_code)]
 pub enum TransactionState {
     RUNNING,
@@ -11,5 +13,17 @@ pub enum IsolationLevel {
     SNAPSHOTISOLATION,
     SERIALIZABLE,
 }
+#[allow(dead_code)]
+pub struct Transaction {
+    id: AtomicU64,
+    finished: bool,
+}
 
-pub struct Transaction {}
+impl Transaction {
+    pub fn new() -> Self {
+        Self {
+            id: AtomicU64::new(0),
+            finished: false,
+        }
+    }
+}

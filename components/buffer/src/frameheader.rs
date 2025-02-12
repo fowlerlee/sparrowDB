@@ -1,3 +1,5 @@
+#[allow(unused)]
+use crate::query_types::TablePage;
 use std::sync::atomic::AtomicU64;
 
 #[derive(Debug)]
@@ -27,6 +29,22 @@ impl Default for FrameHeader {
         }
     }
 }
+
+// enum CliError {
+//     IoError(io::Error),
+//     ParseError(num::ParseIntError),
+// }
+
+// impl From<TablePage> for FrameHeader {
+//     fn from(table_page: TablePage) -> Self {
+//         Self {
+//             is_dirty: false,
+//             data: table_page.data,
+//             frame_id: (),
+//             pin_count: (),
+//         }
+//     }
+// }
 
 // impl FromIterator<u8> for FrameHeader {
 //     fn from_iter<T: IntoIterator<Item = u8>>(iter: T) -> Self {
