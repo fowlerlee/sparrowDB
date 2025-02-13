@@ -1,7 +1,7 @@
 use buffer::bufferpoolmanager::BufferPoolManager;
 use buffer::catalog::Catalog;
 use buffer::query_types::{
-    get_demo_schema, get_demo_table_heap_with_n_page_m_tuples_each, TablePage, Tuple,
+    get_demo_schema, get_demo_table_heap_with_n_page_m_tuples_each, TablePage,
 };
 use common::transaction::Transaction;
 use std::sync::{Arc, Mutex};
@@ -96,6 +96,7 @@ fn main() {
 
         let mut bpm = BufferPoolManager::new(10, 2);
         bpm.table_heap = get_demo_table_heap_with_n_page_m_tuples_each(10, 10);
+        #[allow(unused)]
         let mut catalog = Arc::new(Mutex::new(Catalog::new()));
         catalog.lock().unwrap().bpm = bpm;
         let fake = Arc::clone(&catalog);
