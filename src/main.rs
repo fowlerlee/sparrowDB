@@ -85,6 +85,14 @@ fn main() {
 
     println!("Enter a command (SELECT, CREATE, or EXIT to quit):");
 
+    let mut bpm = BufferPoolManager::new(10, 2);
+    bpm.table_heap = Arc::new(Mutex::new(get_demo_table_heap_with_n_page_m_tuples_each(
+        10, 10,
+    )));
+    #[allow(unused)]
+    let mut catalog = Arc::new(Mutex::new(Catalog::new()));
+    catalog.lock().unwrap().bpm = bpm;
+
     loop {
         print!(" > ");
         io::stdout().flush().unwrap();
@@ -94,11 +102,6 @@ fn main() {
         let upper = input.to_uppercase();
         let input = upper.split_whitespace().collect::<Vec<&str>>();
 
-        let mut bpm = BufferPoolManager::new(10, 2);
-        bpm.table_heap = get_demo_table_heap_with_n_page_m_tuples_each(10, 10);
-        #[allow(unused)]
-        let mut catalog = Arc::new(Mutex::new(Catalog::new()));
-        catalog.lock().unwrap().bpm = bpm;
         let fake = Arc::clone(&catalog);
 
         match input[0] {
@@ -116,7 +119,7 @@ fn main() {
 
 fn show_table(catalog: Arc<Mutex<Catalog>>) {
     let guard = catalog.lock().unwrap();
-    guard.get_table(None);
+    println!("{:?}", guard.get_table(None));
 }
 
 fn handle_select(catalog: Arc<Mutex<Catalog>>, input: Vec<&str>) {
@@ -131,6 +134,8 @@ fn handle_select(catalog: Arc<Mutex<Catalog>>, input: Vec<&str>) {
         guard
             .bpm
             .table_heap
+            .lock()
+            .unwrap()
             .data
             .iter()
             .map(|table| table.clone())

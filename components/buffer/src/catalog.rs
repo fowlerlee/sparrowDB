@@ -1,5 +1,6 @@
 use std::cell::RefCell;
 use std::sync::atomic::Ordering;
+use std::sync::{Arc, Mutex};
 use std::{collections::HashMap, sync::atomic::AtomicU32};
 
 use crate::bufferpoolmanager::BufferPoolManager;
@@ -26,7 +27,7 @@ type IndexId = u32;
 pub struct TableInfo {
     table_name: String,
     schema: Schema, // perhaps put on the heap?
-    table_heap: Box<TableHeap>,
+    table_heap: Arc<Mutex<TableHeap>>,
     table_id: TableId,
 }
 
@@ -46,7 +47,7 @@ impl TableInfo {
         Self {
             table_name,
             schema,
-            table_heap: Box::new(table_heap),
+            table_heap: Arc::new(Mutex::new(table_heap)),
             table_id,
         }
     }
@@ -126,7 +127,7 @@ impl Catalog {
         self.index_names
             .entry(table_name.borrow().parse().unwrap())
             .or_insert_with(|| HashMap::new());
-        // self.bpm.table_heap = table_info.borrow().clone().table_heap;
+        self.bpm.table_heap = table_info.borrow().clone().table_heap;
         // .insert(IndexName, IndexId);
         table_info.into_inner()
     }

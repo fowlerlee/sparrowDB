@@ -201,7 +201,7 @@ pub struct BufferPoolManager {
     free_frames: Vec<[u8; 4096]>,
     replacer: Box<LRUKReplacer>,
     disk_scheduler: DiskScheduler,
-    pub table_heap: TableHeap,
+    pub table_heap: Arc<Mutex<TableHeap>>,
 }
 
 //                     +-----------------------------+
@@ -239,7 +239,7 @@ impl BufferPoolManager {
             free_frames,
             replacer: Box::new(LRUKReplacer::new(k_b_d)),
             disk_scheduler: DiskScheduler::new(DiskManager::new(new_file)),
-            table_heap: TableHeap::new(capacity),
+            table_heap: Arc::new(Mutex::new(TableHeap::new(capacity))),
         }
     }
 
@@ -307,7 +307,7 @@ impl BufferPoolManager {
     }
 
     pub fn set_table_heap(&mut self, table_heap: TableHeap) {
-        self.table_heap = table_heap;
+        self.table_heap = Arc::new(Mutex::new(table_heap));
     }
 }
 
@@ -418,7 +418,7 @@ mod test {
         let table_heap = get_demo_table_heap_with_n_page_m_tuples_each(5, 20);
         bpm.set_table_heap(table_heap);
         // have data in the table heap.
-        bpm.table_heap.create_index();
+        bpm.table_heap.lock().unwrap().create_index();
     }
 
     #[test]
