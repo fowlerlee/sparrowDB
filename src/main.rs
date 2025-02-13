@@ -1,6 +1,8 @@
 use buffer::bufferpoolmanager::BufferPoolManager;
 use buffer::catalog::Catalog;
-use buffer::query_types::{get_demo_schema, get_demo_table_heap_with_n_page_m_tuples_each, Tuple};
+use buffer::query_types::{
+    get_demo_schema, get_demo_table_heap_with_n_page_m_tuples_each, TablePage, Tuple,
+};
 use common::transaction::Transaction;
 use std::sync::{Arc, Mutex};
 
@@ -12,9 +14,9 @@ enum Statements {
     CREATE(String),
 }
 
-fn make_kestreldb_logo(){
+fn make_kestreldb_logo() {
     print!(
-    r#"
+        r#"
 ....................... ...........................
 ..................           .....  .  ............
 ............  .  .   @@@@@@@    .......  ..........
@@ -54,7 +56,26 @@ fn make_kestreldb_logo(){
               KestrelDB
 
     "#
+    )
+}
 
+fn print_goodbye() {
+    println!(
+        r#"   
+ ▗▄▄▖ ▄▄▄   ▄▄▄     ▐▌▗▖   ▄   ▄ ▗▞▀▚▖    ▗▞▀▀▘▄▄▄ ▄▄▄  ▄▄▄▄  
+▐▌   █   █ █   █    ▐▌▐▌   █   █ ▐▛▀▀▘    ▐▌  █   █   █ █ █ █ 
+▐▌▝▜▌▀▄▄▄▀ ▀▄▄▄▀ ▗▞▀▜▌▐▛▀▚▖ ▀▀▀█ ▝▚▄▄▖    ▐▛▀▘█   ▀▄▄▄▀ █   █ 
+▝▚▄▞▘            ▝▚▄▟▌▐▙▄▞▘▄   █          ▐▌                  
+                            ▀▀▀                               
+                                                              
+                                                              
+▗▖ ▗▖▗▄▄▄▖ ▗▄▄▖▗▄▄▄▖▗▄▄▖  ▗▄▖ ▗▖       ▗▄▄▄  ▗▄▄▖             
+▐▌▗▞▘▐▌   ▐▌     █  ▐▌ ▐▌▐▌ ▐▌▐▌       ▐▌  █ ▐▌ ▐▌            
+▐▛▚▖ ▐▛▀▀▘ ▝▀▚▖  █  ▐▛▀▚▖▐▛▀▜▌▐▌       ▐▌  █ ▐▛▀▚▖            
+▐▌ ▐▌▐▙▄▄▖▗▄▄▞▘  █  ▐▌ ▐▌▐▌ ▐▌▐▙▄▄▖    ▐▙▄▄▀ ▐▙▄▞▘            
+                                                              
+            Goodbye from KestrelDB                                                                                                                                 
+        "#
     )
 }
 
@@ -84,7 +105,7 @@ fn main() {
             "SELECT" => handle_select(fake, input.clone()),
             "CREATE" => handle_create(fake, input.clone()),
             "EXIT" => {
-                println!("Goodbye from KestrelDB!");
+                print_goodbye();
                 break;
             }
             _ => println!("Unknown command. Try SELECT, CREATE, or EXIT."),
@@ -111,8 +132,8 @@ fn handle_select(catalog: Arc<Mutex<Catalog>>, input: Vec<&str>) {
             .table_heap
             .data
             .iter()
-            .flat_map(|table| table.data.clone())
-            .collect::<Vec<Tuple>>()
+            .map(|table| table.clone())
+            .collect::<Vec<TablePage>>()
     )
 }
 

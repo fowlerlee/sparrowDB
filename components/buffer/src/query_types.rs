@@ -1,6 +1,7 @@
 use rand::random;
 #[allow(unused)]
 use std::sync::{Arc, Mutex};
+use std::fmt::{Display, Formatter, Result};
 
 use crate::skiplistindex::SkipListIndex;
 
@@ -86,6 +87,12 @@ pub struct Tuple {
     offset: usize,
 }
 
+impl Display for Tuple {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        write!(f, "Tuple(id: {}, val: {}, offset: {})", self.id, self.val, self.offset)
+    }
+}
+
 #[allow(dead_code)]
 impl Tuple {
     fn construct_from_schema(id: u64, value: Schema) -> Self {
@@ -134,6 +141,17 @@ impl Tuple {
 pub struct TablePage {
     pub data: Vec<Tuple>,
 }
+
+impl Display for TablePage {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        writeln!(f, "TablePage:")?;
+        for tuple in &self.data {
+            writeln!(f, "  {}", tuple)?;
+        }
+        Ok(())
+    }
+}
+
 #[allow(dead_code)]
 impl TablePage {
     fn new(data: Vec<Tuple>) -> Self {
@@ -146,6 +164,16 @@ impl TablePage {
 pub struct TableHeap {
     pub data: Vec<TablePage>,
     index: SkipListIndex,
+}
+
+impl Display for TableHeap {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        writeln!(f, "Table Heap:")?;
+        for table_page in &self.data {
+            writeln!(f, "  {}", table_page)?;
+        }
+        Ok(())
+    }
 }
 
 #[allow(dead_code)]
