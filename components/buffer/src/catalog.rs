@@ -126,6 +126,7 @@ impl Catalog {
         self.index_names
             .entry(table_name.borrow().parse().unwrap())
             .or_insert_with(|| HashMap::new());
+        // self.bpm.table_heap = table_info.borrow().clone().table_heap;
         // .insert(IndexName, IndexId);
         table_info.into_inner()
     }
