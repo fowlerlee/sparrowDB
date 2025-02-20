@@ -418,7 +418,6 @@ mod test {
         let table_heap = get_demo_table_heap_with_n_page_m_tuples_each(5, 20);
         bpm.set_table_heap(table_heap);
         // have data in the table heap.
-        bpm.table_heap.lock().unwrap().create_index();
     }
 
     #[test]

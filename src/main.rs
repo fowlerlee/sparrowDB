@@ -129,18 +129,16 @@ fn handle_select(catalog: Arc<Mutex<Catalog>>, input: Vec<&str>) {
         return;
     }
     let _table = guard.get_table(Some(input[3].to_string()));
-    println!(
-        "{:?}",
-        guard
-            .bpm
-            .table_heap
-            .lock()
-            .unwrap()
-            .data
-            .iter()
-            .map(|table| table.clone())
-            .collect::<Vec<TablePage>>()
-    )
+    let table_pages: Vec<TablePage> = guard
+        .bpm
+        .table_heap
+        .lock()
+        .unwrap()
+        .data
+        .iter()
+        .map(|v| v.clone()) // Clones each &TablePage into TablePage
+        .collect();
+    println!("{:?}", table_pages);
 }
 
 fn handle_create(catalog: Arc<Mutex<Catalog>>, input: Vec<&str>) {

@@ -10,6 +10,6 @@ mod test {
         let table_heap =
             buffer::query_types::get_demo_table_heap_with_n_page_m_tuples_each(pages, 20);
         bpm.set_table_heap(table_heap);
-        bpm.table_heap.lock().unwrap().create_index();
+        // bpm.table_heap.lock().unwrap().create_index();
     }
 }

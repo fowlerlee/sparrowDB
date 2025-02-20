@@ -1,9 +1,9 @@
 use rand::random;
+use skiplist::OrderedSkipList;
+use std::fmt::{Display, Formatter, Result};
 #[allow(unused)]
 use std::sync::{Arc, Mutex};
-use std::fmt::{Display, Formatter, Result};
-
-use crate::skiplistindex::SkipListIndex;
+// use crate::skiplistindex::SkipListIndex;
 
 #[non_exhaustive]
 #[derive(Clone, Debug)]
@@ -80,7 +80,7 @@ impl Schema {
 }
 
 #[allow(dead_code)]
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, PartialEq, PartialOrd)]
 pub struct Tuple {
     id: u64,
     val: u64,
@@ -89,7 +89,11 @@ pub struct Tuple {
 
 impl Display for Tuple {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-        write!(f, "Tuple(id: {}, val: {}, offset: {})", self.id, self.val, self.offset)
+        write!(
+            f,
+            "Tuple(id: {}, val: {}, offset: {})",
+            self.id, self.val, self.offset
+        )
     }
 }
 
@@ -137,9 +141,19 @@ impl Tuple {
 //         }
 
 #[allow(dead_code)]
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct TablePage {
     pub data: Vec<Tuple>,
+    index: Option<OrderedSkipList<Tuple>>,
+}
+
+impl Clone for TablePage {
+    fn clone(&self) -> Self {
+        Self {
+            data: self.data.clone(),
+            index: None,
+        }
+    }
 }
 
 impl Display for TablePage {
@@ -155,15 +169,23 @@ impl Display for TablePage {
 #[allow(dead_code)]
 impl TablePage {
     fn new(data: Vec<Tuple>) -> Self {
-        Self { data }
+        Self {
+            data,
+            index: Some(OrderedSkipList::new()),
+        }
+    }
+
+    fn create_index(&mut self, _name: String) {
+        for element in self.data.iter() {
+            self.index.as_mut().unwrap().insert(element.clone());
+        }
     }
 }
 
 #[allow(dead_code)]
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct TableHeap {
     pub data: Vec<TablePage>,
-    index: SkipListIndex,
 }
 
 impl Display for TableHeap {
@@ -181,22 +203,11 @@ impl TableHeap {
     pub fn new(size: usize) -> Self {
         Self {
             data: Vec::with_capacity(size),
-            index: SkipListIndex::new(),
         }
     }
 
     pub fn add_table_page(&mut self, page: TablePage) {
         self.data.push(page)
-    }
-
-    pub fn create_index(&mut self) -> Box<SkipListIndex> {
-        for i in self.data.iter() {
-            for j in i.data.iter() {
-                self.index.insert(j.id, j.val, j.offset);
-            }
-        }
-        let skip_list_index = self.index.clone();
-        Box::new(skip_list_index)
     }
 }
 
@@ -264,14 +275,13 @@ mod test {
         }
     }
 
-    #[test]
-    fn test_page_heap_create_index() {
-        // TODO: fix the bug in the range query for the table_heap as skip list is not returning range for this test
-        // strangely it works in other test above?
-        let mut table_heap = get_demo_table_heap_with_n_page_m_tuples_each(5, 20);
-        let box_cloned_list = table_heap.create_index();
-        let a = table_heap.index.range_query(1, 100);
-        // let b = 20u64;
-        println!("{:?}; {:?}", a.get(0), box_cloned_list);
-    }
+    // #[test]
+    // fn test_page_heap_create_index() {
+    //     // TODO: fix the bug in the range query for the table_heap as skip list is not returning range for this test
+    //     // strangely it works in other test above?
+    //     let mut table_heap = get_demo_table_heap_with_n_page_m_tuples_each(5, 20);
+    //     let box_cloned_list = table_heap;
+    //     // let b = 20u64;
+    //     println!("{:?}; {:?}", a.get(0), box_cloned_list);
+    // }
 }
