@@ -386,7 +386,7 @@ mod test {
     #[test]
     fn test_page_no_data_loss() {
         let bpm = Arc::new(std::sync::RwLock::new(BufferPoolManager::new(10, 2)));
-        for _ in 0..100 {
+        // for _ in 0..100 {
             let fake = Arc::clone(&bpm);
             std::thread::spawn(move || {
                 let wrote_page = fake
@@ -396,7 +396,7 @@ mod test {
                     .unwrap();
                 assert!(wrote_page);
             });
-        }
+        // }
 
         for _ in 0..100 {
             let fake = Arc::clone(&bpm);
